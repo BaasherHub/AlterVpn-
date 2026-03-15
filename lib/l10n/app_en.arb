@@ -1,0 +1,7 @@
+{
+  "@@locale": "en",
+  "appName": "AlterVPN",
+  "@appName": {
+    "description": "Application name"
+  }
+}
