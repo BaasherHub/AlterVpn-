@@ -94,7 +94,7 @@ jobs:
           retention-days: 7
 
   build-android:
-    name: Android Debug APK
+    name: Android Release APK
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -114,12 +114,12 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build debug APK
-        run: flutter build apk --debug
+      - name: Build release APK
+        run: flutter build apk --release
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: altervpn-debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: altervpn-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 14

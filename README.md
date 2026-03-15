@@ -6,6 +6,21 @@ A privacy-first VPN client for Android built with Flutter, connecting to the [VP
 
 ---
 
+## Download APK
+
+**[⬇ Download the latest APK from Releases](https://github.com/BaasherHub/AlterVpn-/releases/latest)**
+
+### How to install on Android
+
+1. Open the link above **on your Android device**
+2. Tap the `.apk` file to download it
+3. Open the downloaded file — if prompted, enable **"Install from unknown sources"** in your device Settings
+4. Tap **Install** and open AlterVPN
+
+> **Minimum requirement:** Android 5.0 (Lollipop) or newer
+
+---
+
 ## Features
 
 - 🔒 **OpenVPN-based encryption** — industry-standard tunnel via `openvpn_flutter`
