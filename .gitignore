@@ -39,3 +39,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Android local config (machine-specific)
+android/local.properties
+local.properties

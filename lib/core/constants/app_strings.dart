@@ -19,6 +19,7 @@ class AppStrings {
   static const String onboarding3Subtitle =
       'No subscriptions. No data collection.';
   static const String getStarted = 'Get Started';
+  static const String next = 'Next';
 
   // Home
   static const String tapToConnect = 'Tap to connect';

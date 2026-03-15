@@ -203,7 +203,7 @@ class _NextButton extends StatelessWidget {
           ),
         ),
         child: Text(
-          'Next'.toUpperCase(),
+          AppStrings.next.toUpperCase(),
           style: AppTypography.labelLarge(color: AppColors.darkText)
               .copyWith(letterSpacing: 3),
         ),

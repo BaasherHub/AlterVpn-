@@ -134,7 +134,8 @@ class ConnectionController extends Notifier<AlterConnectionState> {
     try {
       await VpnEngine.stopVpn();
     } catch (_) {
-      // Ignore errors on disconnect
+      // Disconnect errors are intentionally ignored — the VPN process
+      // may already be stopped or unreachable at this point.
     }
     _stopTimer();
     state = state.copyWith(

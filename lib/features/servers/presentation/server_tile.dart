@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../data/server_model.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 
@@ -53,7 +54,7 @@ class ServerTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${server.numVpnSessions} sessions',
+                    '${server.numVpnSessions} ${AppStrings.sessions}',
                     style: AppTypography.bodySmall(color: secondaryColor),
                   ),
                 ],
