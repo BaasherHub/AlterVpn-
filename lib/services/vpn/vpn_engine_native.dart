@@ -12,10 +12,8 @@ enum VpnStage {
   denied,
   error,
   reconnecting,
-  unknown,
-}
+  unknown;
 
-extension VpnStageExtension on VpnStage {
   String get displayName {
     switch (this) {
       case VpnStage.prepare:
