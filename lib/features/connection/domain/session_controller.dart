@@ -133,7 +133,7 @@ class SessionController extends Notifier<SessionData> {
     bool hasFreePass = state.hasFreePass;
     if (newCount >= AdConfig.streakThreshold && !hasFreePass) {
       final midnight =
-          DateTime(now.year, now.month, now.day + 1); // next midnight
+          DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
       await prefs.setInt(
           _kFreePassExpiresAt, midnight.millisecondsSinceEpoch);
       hasFreePass = true;

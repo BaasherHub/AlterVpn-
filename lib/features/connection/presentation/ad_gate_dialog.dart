@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,11 +43,20 @@ class _AdGateSheetState extends ConsumerState<_AdGateSheet> {
   bool _isLoading = false;
   bool _adUnavailable = false;
   int _msgIndex = 0;
+  StreamSubscription<int>? _tickerSubscription;
+
+  @override
+  void dispose() {
+    _tickerSubscription?.cancel();
+    super.dispose();
+  }
 
   void _nextMessage() {
-    setState(() {
-      _msgIndex = (_msgIndex + 1) % _loadingMessages.length;
-    });
+    if (mounted) {
+      setState(() {
+        _msgIndex = (_msgIndex + 1) % _loadingMessages.length;
+      });
+    }
   }
 
   Future<void> _handleWatch() async {
@@ -56,13 +66,17 @@ class _AdGateSheetState extends ConsumerState<_AdGateSheet> {
     });
 
     // Cycle loading messages while waiting.
-    final ticker = Stream.periodic(const Duration(milliseconds: 1200))
-        .listen((_) => _nextMessage());
+    _tickerSubscription?.cancel();
+    _tickerSubscription = Stream.periodic(
+      const Duration(milliseconds: 1200),
+      (i) => i,
+    ).listen((_) => _nextMessage());
 
     final adService = ref.read(adServiceProvider);
     final rewarded = await adService.showRewardedAd();
 
-    await ticker.cancel();
+    _tickerSubscription?.cancel();
+    _tickerSubscription = null;
 
     if (!mounted) return;
 

@@ -7,6 +7,8 @@ import 'ad_config.dart';
 /// Riverpod provider that exposes the singleton [AdService].
 final adServiceProvider = Provider<AdService>((ref) {
   final service = AdService();
+  // Initialize the SDK lazily when the provider is first accessed.
+  service.initialize();
   ref.onDispose(service.dispose);
   return service;
 });

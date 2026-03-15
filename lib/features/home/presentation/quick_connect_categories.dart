@@ -30,7 +30,7 @@ class QuickConnectCategories extends ConsumerWidget {
             children: [
               _CategoryPill(
                 icon: '⚡',
-                label: 'Fast for TikTok',
+                label: 'Fast Streaming',
                 onTap: () => _selectFastest(ref, servers),
               ),
               const SizedBox(width: AppSpacing.sm),
