@@ -6,6 +6,7 @@ import '../../../services/vpn/vpn_engine.dart';
 import '../../../services/vpn/vpn_config_model.dart';
 import '../../../services/vpn/vpn_status_model.dart';
 import 'connection_state.dart';
+import 'session_controller.dart';
 
 final connectionControllerProvider =
     NotifierProvider<ConnectionController, AlterConnectionState>(
@@ -21,6 +22,7 @@ class ConnectionController extends Notifier<AlterConnectionState> {
   AlterConnectionState build() {
     _listenToVpnStage();
     _listenToVpnStatus();
+    _listenToSessionExpiry();
     ref.onDispose(() {
       _stageSubscription?.cancel();
       _statusSubscription?.cancel();
@@ -46,6 +48,15 @@ class ConnectionController extends Notifier<AlterConnectionState> {
       (status) => state = state.copyWith(vpnStatus: status),
       onError: (_) {},
     );
+  }
+
+  void _listenToSessionExpiry() {
+    ref.listen<SessionData>(sessionControllerProvider, (prev, next) {
+      if (next.sessionState == SessionState.expired && state.isConnected) {
+        // Session timer ran out — disconnect automatically.
+        disconnect();
+      }
+    });
   }
 
   void _handleStageChange(VpnStage stage) {
@@ -109,6 +120,10 @@ class ConnectionController extends Notifier<AlterConnectionState> {
 
     if (server == null) return;
 
+    await _doConnect(server);
+  }
+
+  Future<void> _doConnect(ServerModel server) async {
     state = state.copyWith(
       status: ConnectionStatus.connecting,
       clearError: true,
@@ -138,6 +153,8 @@ class ConnectionController extends Notifier<AlterConnectionState> {
       // may already be stopped or unreachable at this point.
     }
     _stopTimer();
+    // End the session timer.
+    await ref.read(sessionControllerProvider.notifier).endSession();
     state = state.copyWith(
       status: ConnectionStatus.disconnected,
       connectionDuration: Duration.zero,

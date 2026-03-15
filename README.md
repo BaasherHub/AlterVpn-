@@ -61,7 +61,72 @@ lib/
 └── widgets/          # Shared UI components
 ```
 
-## Deploy to Railway (Web — UI Testing)
+## Monetization — Ad-Supported Free Model
+
+AlterVPN is **100% free** with no subscriptions. It uses Google AdMob rewarded video ads to sustain development.
+
+### How it works
+
+| Step | What happens |
+|------|-------------|
+| 1 | User taps **"Watch Ad & Connect"** |
+| 2 | Ad-gate dialog appears with streak progress |
+| 3 | User taps **"Watch & Connect"** → 30-second rewarded video plays |
+| 4 | User earns reward → VPN connects → **2-hour session** starts |
+| 5 | Timer counts down on the home screen (`HH:MM:SS`) |
+| 6 | After 3 ads in one day → **24-hour free pass** unlocks (no more ads until midnight) |
+| 7 | When session expires → VPN disconnects → user taps to watch another ad |
+
+> **Graceful failure:** If no ad is available, the user is connected for free anyway — the app never blocks access.
+
+### Ad streak & 24-hour free pass
+
+- **Streak dots** at the top of the home screen show today's progress (e.g. ●●○ = 2 of 3)
+- After watching 3 ads in a single calendar day the dots turn gold and a free-pass banner appears
+- The free pass expires at midnight and the streak resets the next day
+
+### Replace test ad IDs with real ones
+
+All ad unit IDs are in `lib/services/ads/ad_config.dart`. Search for `TODO` to find them:
+
+```dart
+// lib/services/ads/ad_config.dart
+
+// TODO: Replace with your real Android Rewarded Ad Unit ID from AdMob console.
+static const String androidRewardedAdUnitId = 'ca-app-pub-XXXXXX/XXXXXXXX';
+
+// TODO: Replace with your real iOS Rewarded Ad Unit ID from AdMob console.
+static const String iosRewardedAdUnitId = 'ca-app-pub-XXXXXX/XXXXXXXX';
+```
+
+Also update the AdMob Application ID in `android/app/src/main/AndroidManifest.xml`:
+
+```xml
+<!-- TODO: Replace with your real AdMob Application ID -->
+<meta-data
+    android:name="com.google.android.gms.ads.APPLICATION_ID"
+    android:value="ca-app-pub-XXXXXX~XXXXXXXXXX"/>
+```
+
+### Session & streak constants
+
+```dart
+// lib/services/ads/ad_config.dart
+sessionDurationSeconds = 7200;   // 2-hour VPN session
+streakThreshold        = 3;      // Ads needed for 24-hr free pass
+adCooldownSeconds      = 5;      // Minimum gap between ad shows
+```
+
+### Web preview
+
+Ads do not run in the browser (web build). On web:
+- `showRewardedAd()` returns `true` immediately
+- A small banner says "Ads are disabled in web preview mode"
+- The session timer still works for UI testing
+
+---
+
+
 
 AlterVPN ships with a Railway-ready configuration so you can test the full UI in a browser before building the APK.  
 On web, VPN connection is **simulated** (no real tunnel — that requires Android). All screens, animations, and server browsing work normally.
