@@ -38,8 +38,8 @@ COPY nginx.conf /etc/nginx/templates/default.conf.template
 # Railway injects PORT at runtime; default to 8080
 ENV PORT=8080
 
-# Limit envsubst substitution to ${PORT} only so nginx variables
+# Limit envsubst substitution to PORT only so nginx variables
 # ($uri, $host, etc.) are not mistakenly replaced by the template processor.
-ENV NGINX_ENVSUBST_FILTER='${PORT}'
+ENV NGINX_ENVSUBST_VARS='PORT'
 
 EXPOSE 8080
