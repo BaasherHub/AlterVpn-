@@ -15,5 +15,6 @@ void main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+
   runApp(const ProviderScope(child: AlterVpnApp()));
 }

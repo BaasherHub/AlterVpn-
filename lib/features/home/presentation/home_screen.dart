@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../connection/domain/connection_controller.dart';
 import '../../connection/domain/connection_state.dart';
+import '../../connection/domain/session_controller.dart';
 import '../../connection/presentation/connection_button.dart';
 import '../../connection/presentation/connection_status_bar.dart';
 import '../../../core/constants/app_colors.dart';
@@ -9,6 +11,8 @@ import '../../../core/constants/app_typography.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../services/ads/ad_config.dart';
+import 'quick_connect_categories.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -16,6 +20,7 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final connectionState = ref.watch(connectionControllerProvider);
+    final sessionData = ref.watch(sessionControllerProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? AppColors.darkText : AppColors.lightText;
     final secondaryColor =
@@ -53,6 +58,39 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
 
+            // Ad streak / free-pass indicator
+            _StreakBar(
+              sessionData: sessionData,
+              secondaryColor: secondaryColor,
+            ),
+
+            // Web preview notice
+            if (kIsWeb)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenPadding,
+                    vertical: AppSpacing.xs),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentGold.withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(
+                        AppSpacing.borderRadiusMd),
+                    border: Border.all(
+                        color: AppColors.accentGold.withOpacity(0.25)),
+                  ),
+                  child: Text(
+                    'Ads are disabled in web preview mode',
+                    style: AppTypography.bodySmall(
+                        color: AppColors.accentGold),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+
             // Connection ring area
             Expanded(
               child: Column(
@@ -60,24 +98,53 @@ class HomeScreen extends ConsumerWidget {
                 children: [
                   const ConnectionButton(),
                   const SizedBox(height: AppSpacing.xl),
-                  // Timer shown when connected
+
+                  // Session timer shown when connected
                   AnimatedOpacity(
                     duration: const Duration(milliseconds: 300),
-                    opacity: connectionState.isConnected ? 1.0 : 0.0,
-                    child: Text(
+                    opacity: connectionState.isConnected &&
+                            sessionData.sessionState == SessionState.active
+                        ? 1.0
+                        : 0.0,
+                    child: Column(
+                      children: [
+                        Text(
+                          sessionData.formattedRemaining,
+                          style: AppTypography.monoLarge(color: textColor),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          'Session expires in…',
+                          style: AppTypography.bodySmall(
+                              color: secondaryColor),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Connection duration timer (when connected, no session)
+                  if (connectionState.isConnected &&
+                      sessionData.sessionState != SessionState.active)
+                    Text(
                       Formatters.formatDuration(
                           connectionState.connectionDuration),
                       style: AppTypography.monoLarge(color: textColor),
                     ),
-                  ),
+
+                  // Status text when not connected
                   if (!connectionState.isConnected)
                     Text(
-                      _getStatusText(connectionState),
-                      style: AppTypography.bodySmall(color: secondaryColor),
+                      _getStatusText(connectionState, sessionData),
+                      style: AppTypography.bodySmall(
+                          color: secondaryColor),
                     ),
                 ],
               ),
             ),
+
+            // Quick connect categories
+            const QuickConnectCategories(),
+            const SizedBox(height: AppSpacing.md),
 
             // Selected server selector
             Padding(
@@ -100,7 +167,8 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  String _getStatusText(AlterConnectionState state) {
+  String _getStatusText(
+      AlterConnectionState state, SessionData sessionData) {
     switch (state.status) {
       case ConnectionStatus.connecting:
         return state.vpnStage.displayName;
@@ -109,12 +177,80 @@ class HomeScreen extends ConsumerWidget {
       case ConnectionStatus.error:
         return state.errorMessage ?? AppStrings.connectionFailed;
       default:
-        return state.selectedServer == null
-            ? AppStrings.selectServer
-            : AppStrings.tapToConnect;
+        if (state.selectedServer == null) return AppStrings.selectServer;
+        if (sessionData.hasFreePass) return 'Connect Free';
+        return 'Watch Ad & Connect';
     }
   }
 }
+
+// ─── Streak bar ──────────────────────────────────────────────────────────────
+
+class _StreakBar extends StatelessWidget {
+  final SessionData sessionData;
+  final Color secondaryColor;
+
+  const _StreakBar({
+    required this.sessionData,
+    required this.secondaryColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (sessionData.hasFreePass) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenPadding,
+            vertical: AppSpacing.xs),
+        child: Text(
+          '🌟 Free pass active until midnight',
+          style: AppTypography.bodySmall(
+              color: AppColors.accentGold),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    final watched = sessionData.adsWatchedToday
+        .clamp(0, AdConfig.streakThreshold);
+    final remaining = AdConfig.streakThreshold - watched;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenPadding,
+          vertical: AppSpacing.xs),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          ...List.generate(AdConfig.streakThreshold, (i) {
+            final active = i < watched;
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 3),
+              child: Container(
+                width: active ? 8 : 6,
+                height: active ? 8 : 6,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: active
+                      ? AppColors.accentGold
+                      : AppColors.darkBorder,
+                ),
+              ),
+            );
+          }),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            '$watched/${AdConfig.streakThreshold} — '
+            '${remaining > 0 ? 'watch $remaining more for 24 hr pass' : '🌟 Free pass earned!'}',
+            style: AppTypography.bodySmall(color: secondaryColor),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Server selector ─────────────────────────────────────────────────────────
 
 class _ServerSelector extends ConsumerWidget {
   final AlterConnectionState connectionState;
@@ -167,3 +303,4 @@ class _ServerSelector extends ConsumerWidget {
     );
   }
 }
+
