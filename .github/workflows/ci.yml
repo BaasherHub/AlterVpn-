@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run flutter analyze
+        run: flutter analyze --no-fatal-infos
+
+  test:
+    name: Unit & Widget Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run tests
+        run: |
+          if [ -d test ] && [ -n "$(find test -name '*_test.dart' 2>/dev/null)" ]; then
+            flutter test
+          else
+            echo "No test files found — skipping."
+          fi
+
+  build-web:
+    name: Web Release Build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Enable Flutter web
+        run: flutter config --enable-web
+
+      - name: Recreate web platform bootstrap files
+        run: |
+          if [ -f web/index.html ]; then
+            cp web/index.html /tmp/custom_index.html
+          fi
+          flutter create --platforms=web --project-name alter_vpn .
+          if [ -f /tmp/custom_index.html ]; then
+            cp /tmp/custom_index.html web/index.html
+          fi
+
+      - name: Build web (release)
+        run: flutter build web --release
+
+      - name: Upload web build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: build/web
+          retention-days: 7
