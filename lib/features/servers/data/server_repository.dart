@@ -21,7 +21,14 @@ class ServerRepository {
     }
 
     final servers = await _api.fetchServers();
-    _cachedServers = servers..sort((a, b) => a.ping.compareTo(b.ping));
+    // Sort by ping ascending; servers with ping == 0 go to the end
+    servers.sort((a, b) {
+      if (a.ping == 0 && b.ping == 0) return 0;
+      if (a.ping == 0) return 1;
+      if (b.ping == 0) return -1;
+      return a.ping.compareTo(b.ping);
+    });
+    _cachedServers = servers;
     _lastFetch = now;
     return _cachedServers;
   }

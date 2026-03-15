@@ -15,15 +15,19 @@ class VpnStatusModel {
 
   factory VpnStatusModel.empty() => const VpnStatusModel();
 
-  double get downloadSpeed {
-    final bytes = double.tryParse(byteIn) ?? 0;
-    return bytes;
+  /// Raw bytes received (cumulative from VPN status update).
+  double get downloadBytes {
+    return double.tryParse(byteIn) ?? 0;
   }
 
-  double get uploadSpeed {
-    final bytes = double.tryParse(byteOut) ?? 0;
-    return bytes;
+  /// Raw bytes sent (cumulative from VPN status update).
+  double get uploadBytes {
+    return double.tryParse(byteOut) ?? 0;
   }
+
+  // Keep legacy names pointing to raw bytes for display formatting.
+  double get downloadSpeed => downloadBytes;
+  double get uploadSpeed => uploadBytes;
 
   @override
   String toString() =>

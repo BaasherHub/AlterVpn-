@@ -21,12 +21,17 @@ class PreferencesController extends Notifier<PreferencesState> {
   }
 
   Future<void> _initStorage() async {
-    _storage = await StorageService.init();
-    state = PreferencesState(
-      isDarkMode: _storage!.isDarkMode,
-      isKillSwitchEnabled: _storage!.isKillSwitchEnabled,
-      isAutoConnectEnabled: _storage!.isAutoConnectEnabled,
-    );
+    try {
+      final storage = await StorageService.init();
+      _storage = storage;
+      state = PreferencesState(
+        isDarkMode: storage.isDarkMode,
+        isKillSwitchEnabled: storage.isKillSwitchEnabled,
+        isAutoConnectEnabled: storage.isAutoConnectEnabled,
+      );
+    } catch (_) {
+      // Keep default state if storage init fails
+    }
   }
 
   void toggleDarkMode() {

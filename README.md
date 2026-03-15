@@ -73,7 +73,7 @@ lib/
 
 ```bash
 # 1. Clone
-git clone https://github.com/your-org/AlterVpn-.git
+git clone https://github.com/AlterVpn-/AlterVpn-.git
 cd AlterVpn-
 
 # 2. Install dependencies

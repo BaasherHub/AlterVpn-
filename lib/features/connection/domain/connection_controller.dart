@@ -32,7 +32,12 @@ class ConnectionController extends Notifier<AlterConnectionState> {
   void _listenToVpnStage() {
     _stageSubscription = VpnEngine.vpnStageStream.listen(
       _handleStageChange,
-      onError: (_) {},
+      onError: (_) {
+        state = state.copyWith(
+          status: ConnectionStatus.error,
+          errorMessage: 'VPN monitoring error',
+        );
+      },
     );
   }
 
