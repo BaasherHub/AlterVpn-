@@ -5,6 +5,9 @@ FROM ghcr.io/cirruslabs/flutter:stable AS build
 
 WORKDIR /app
 
+# Allow running Flutter as root inside Docker
+ENV FLUTTER_ALLOW_ROOT=true
+
 # Copy project files
 COPY . .
 
@@ -18,8 +21,8 @@ RUN cp web/index.html /tmp/custom_index.html \
     && flutter create --platforms=web --project-name alter_vpn . \
     && cp /tmp/custom_index.html web/index.html
 
-# Build release web app with CanvasKit renderer for best fidelity
-RUN flutter build web --release --web-renderer canvaskit
+# Build release web app (CanvasKit is the default renderer in Flutter 3.22+)
+RUN flutter build web --release
 
 # ─────────────────────────────────────────────────────────
 # Stage 2: Serve with nginx (alpine — minimal image)
