@@ -61,7 +61,33 @@ lib/
 └── widgets/          # Shared UI components
 ```
 
-## Build Instructions
+## Deploy to Railway (Web — UI Testing)
+
+AlterVPN ships with a Railway-ready configuration so you can test the full UI in a browser before building the APK.  
+On web, VPN connection is **simulated** (no real tunnel — that requires Android). All screens, animations, and server browsing work normally.
+
+### One-click deploy
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/github?repo=BaasherHub/AlterVpn-)
+
+### Manual steps
+
+1. Go to [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub repo**
+2. Select `BaasherHub/AlterVpn-`
+3. Railway auto-detects `railway.toml` and builds the Dockerfile
+4. Once deployed, open the generated URL (e.g. `https://altervpn-production.up.railway.app`)
+
+### Environment variables
+
+| Variable | Default | Notes |
+|----------|---------|-------|
+| `PORT` | `8080` | Injected automatically by Railway — no action needed |
+
+> **Build time:** Flutter web builds take ~3–5 minutes. Railway's 15-minute build timeout is more than enough.
+
+---
+
+## Build Instructions (Android APK)
 
 ### Prerequisites
 
@@ -73,7 +99,7 @@ lib/
 
 ```bash
 # 1. Clone
-git clone https://github.com/AlterVpn-/AlterVpn-.git
+git clone https://github.com/BaasherHub/AlterVpn-.git
 cd AlterVpn-
 
 # 2. Install dependencies

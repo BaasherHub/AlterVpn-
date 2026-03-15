@@ -1,0 +1,14 @@
+.git
+.github
+.gitignore
+*.md
+android/
+ios/
+macos/
+linux/
+windows/
+test/
+build/
+.dart_tool/
+.idea/
+*.iml
