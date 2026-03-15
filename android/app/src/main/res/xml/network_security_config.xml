@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Network Security Configuration for AlterVPN.
-  Permits cleartext traffic to VPNGate API and VPN relay servers that may
-  not support HTTPS. All other traffic defaults to HTTPS.
+  Permits cleartext traffic only to the VPNGate API which may serve
+  responses over HTTP. All other traffic defaults to HTTPS.
 -->
 <network-security-config>
-    <base-config cleartextTrafficPermitted="true">
+    <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
     </base-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">vpngate.net</domain>
+    </domain-config>
 </network-security-config>
