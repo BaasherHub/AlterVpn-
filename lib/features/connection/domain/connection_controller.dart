@@ -130,8 +130,19 @@ class ConnectionController extends Notifier<AlterConnectionState> {
     );
 
     try {
+      final vpnConfig = server.openVpnConfig;
+      if (vpnConfig.isEmpty) {
+        // Surface a clear, actionable message before even calling the engine.
+        state = state.copyWith(
+          status: ConnectionStatus.error,
+          errorMessage:
+              'This server has no OpenVPN config. '
+              'Please return to the server list and choose a different server.',
+        );
+        return;
+      }
       final config = VpnConfig(
-        config: server.openVpnConfig,
+        config: vpnConfig,
         serverName: server.hostName,
         country: server.countryLong,
       );
