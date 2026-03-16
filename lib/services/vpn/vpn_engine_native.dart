@@ -97,8 +97,11 @@ class VpnEngine {
   static bool _initialized = false;
 
   static final StreamController<VpnStage> _stageController =
+      // Intentionally never closed — VpnEngine is a static singleton that
+      // lives for the entire app lifetime and continuously delivers events.
       StreamController<VpnStage>.broadcast();
   static final StreamController<VpnStatusModel> _statusController =
+      // Same rationale as _stageController above.
       StreamController<VpnStatusModel>.broadcast();
 
   static Stream<VpnStage> get vpnStageStream => _stageController.stream;
@@ -157,7 +160,22 @@ class VpnEngine {
     _stageController.add(VpnStage.disconnected);
   }
 
-  static Future<String?> currentStage() async => null;
+  static Future<String?> currentStage() async {
+    if (_openVpn == null) return null;
+    try {
+      final stage = await _openVpn!.stage();
+      return stage.name;
+    } catch (_) {
+      return null;
+    }
+  }
 
-  static Future<bool> isConnected() async => false;
+  static Future<bool> isConnected() async {
+    if (_openVpn == null) return false;
+    try {
+      return await _openVpn!.isConnected();
+    } catch (_) {
+      return false;
+    }
+  }
 }

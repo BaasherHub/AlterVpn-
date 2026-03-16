@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:csv/csv.dart';
 import 'server_model.dart';
 
@@ -36,11 +37,9 @@ class VpnGateApi {
         final msg = e.response?.statusCode != null
             ? 'HTTP ${e.response!.statusCode}'
             : e.message ?? e.type.name;
-        // ignore: avoid_print
-        print('[VpnGateApi] $url failed: $msg — trying next endpoint.');
+        debugPrint('[VpnGateApi] $url failed: $msg — trying next endpoint.');
       } catch (e) {
-        // ignore: avoid_print
-        print('[VpnGateApi] $url failed: $e — trying next endpoint.');
+        debugPrint('[VpnGateApi] $url failed: $e — trying next endpoint.');
       }
     }
     throw Exception(
