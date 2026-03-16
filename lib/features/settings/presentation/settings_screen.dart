@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -6,6 +7,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../services/vpn/vpn_engine.dart';
 import '../../../widgets/alter_app_bar.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -48,6 +50,36 @@ class SettingsScreen extends ConsumerWidget {
               value: prefs.isAutoConnectEnabled,
               onChanged: (_) => controller.toggleAutoConnect(),
             ),
+            textColor: textColor,
+            subtitleColor: secondaryColor,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _SettingRow(
+            label: AppStrings.installVpnProfile,
+            subtitle: AppStrings.installVpnProfileSubtitle,
+            trailing: Icon(Icons.verified_user_outlined,
+                color: secondaryColor, size: 18),
+            onTap: () {
+              VpnEngine.initialize().then((_) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(AppStrings.installVpnProfileSuccess),
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              }).catchError((Object e) {
+                debugPrint('[Settings] VpnEngine.initialize() error: $e');
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(AppStrings.installVpnProfileError),
+                    backgroundColor: Colors.red.shade700,
+                    duration: const Duration(seconds: 4),
+                  ),
+                );
+              });
+            },
             textColor: textColor,
             subtitleColor: secondaryColor,
           ),

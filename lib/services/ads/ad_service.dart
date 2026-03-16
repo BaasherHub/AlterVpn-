@@ -70,6 +70,10 @@ class AdService {
     // On web, skip ads entirely — return true so the flow continues.
     if (kIsWeb) return true;
 
+    // Ensure the SDK is initialised (idempotent). If initialization has not
+    // finished yet the _rewardedAd will be null and we fail-open below.
+    if (!_isInitialized) await initialize();
+
     final ad = _rewardedAd;
     if (ad == null) {
       // Ad failed to load → grant free connection so the user isn't blocked.
@@ -96,11 +100,22 @@ class AdService {
       },
     );
 
-    await ad.show(
-      onUserEarnedReward: (_, reward) {
-        rewarded = true;
-      },
-    );
+    try {
+      await ad.show(
+        onUserEarnedReward: (_, reward) {
+          rewarded = true;
+        },
+      );
+    } catch (e) {
+      // ad.show() can throw if the Activity is gone or the ad is stale.
+      // Fail open: dispose the ad, pre-load a fresh one, and let the user
+      // through so a broken ad never blocks connectivity.
+      debugPrint('[AdService] ad.show() threw: $e');
+      ad.dispose();
+      _rewardedAd = null;
+      _preloadAd();
+      return true;
+    }
 
     return completer.future;
   }
