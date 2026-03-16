@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/connection_controller.dart';
-import '../domain/connection_state.dart';
 import '../domain/session_controller.dart';
 import '../../../widgets/animated_connection_ring.dart';
 import 'ad_gate_dialog.dart';

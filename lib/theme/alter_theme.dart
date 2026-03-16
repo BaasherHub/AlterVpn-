@@ -47,7 +47,7 @@ class AlterTheme {
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.accentGreen.withOpacity(0.3);
+            return AppColors.accentGreen.withValues(alpha: 0.3);
           }
           return AppColors.darkBorder;
         }),
@@ -104,7 +104,7 @@ class AlterTheme {
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.accentGreen.withOpacity(0.3);
+            return AppColors.accentGreen.withValues(alpha: 0.3);
           }
           return AppColors.lightBorder;
         }),

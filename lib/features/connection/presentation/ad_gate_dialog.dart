@@ -133,11 +133,11 @@ class _AdGateSheetState extends ConsumerState<_AdGateSheet> {
                 vertical: AppSpacing.sm,
               ),
               decoration: BoxDecoration(
-                color: AppColors.accentGold.withOpacity(0.12),
+                color: AppColors.accentGold.withValues(alpha: 0.12),
                 borderRadius:
                     BorderRadius.circular(AppSpacing.borderRadiusMd),
                 border: Border.all(
-                    color: AppColors.accentGold.withOpacity(0.3)),
+                    color: AppColors.accentGold.withValues(alpha: 0.3)),
               ),
               child: Text(
                 'Ads are disabled in web preview mode',
@@ -156,7 +156,7 @@ class _AdGateSheetState extends ConsumerState<_AdGateSheet> {
                 vertical: AppSpacing.sm,
               ),
               decoration: BoxDecoration(
-                color: AppColors.accentGreenLight.withOpacity(0.12),
+                color: AppColors.accentGreenLight.withValues(alpha: 0.12),
                 borderRadius:
                     BorderRadius.circular(AppSpacing.borderRadiusMd),
               ),
@@ -303,7 +303,7 @@ class _StreakIndicator extends StatelessWidget {
               ? '$filled/${AdConfig.streakThreshold} — watch $streakLeft more for 24-hour free pass!'
               : '🌟 Free pass active until midnight',
           style: AppTypography.bodySmall(
-              color: AppColors.accentGold.withOpacity(0.85)),
+              color: AppColors.accentGold.withValues(alpha: 0.85)),
           textAlign: TextAlign.center,
         ),
       ],

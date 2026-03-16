@@ -26,7 +26,7 @@ extension DurationExtensions on Duration {
 
 extension ColorExtensions on Color {
   Color withOpacityFactor(double factor) =>
-      withOpacity((opacity * factor).clamp(0.0, 1.0));
+      withValues(alpha: (a * factor).clamp(0.0, 1.0));
 }
 
 extension ContextExtensions on BuildContext {

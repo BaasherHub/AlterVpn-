@@ -76,11 +76,11 @@ class HomeScreen extends ConsumerWidget {
                     vertical: AppSpacing.xs,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.accentGold.withOpacity(0.10),
+                    color: AppColors.accentGold.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(
                         AppSpacing.borderRadiusMd),
                     border: Border.all(
-                        color: AppColors.accentGold.withOpacity(0.25)),
+                        color: AppColors.accentGold.withValues(alpha: 0.25)),
                   ),
                   child: Text(
                     'Ads are disabled in web preview mode',
