@@ -1,52 +1,56 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:csv/csv.dart';
+import '../../../core/constants/api_constants.dart';
 import 'server_model.dart';
 
 class VpnGateApi {
-  // Primary VPNGate endpoint.
-  static const String _primaryUrl = 'https://www.vpngate.net/api/iphone/';
-
-  // Community mirror used as fallback when the primary endpoint is
-  // unreachable. Maintained by the VPNGate project.
-  static const String _mirrorUrl = 'https://vpngate.net/api/iphone/';
+  // All traffic goes through the Railway relay backend so that the server list
+  // is reachable even when vpngate.net is blocked in the user's region.
+  // To change the endpoint, update ApiConstants.backendBaseUrl in
+  // lib/core/constants/api_constants.dart — no other file needs editing.
+  static const String _backendUrl = ApiConstants.serversUrl;
 
   final Dio _dio;
 
   VpnGateApi({Dio? dio})
       : _dio = dio ??
             Dio(BaseOptions(
-              connectTimeout: const Duration(seconds: 20),
-              receiveTimeout: const Duration(seconds: 40),
+              connectTimeout: const Duration(seconds: 15),
+              receiveTimeout: const Duration(seconds: 30),
               headers: {
                 'User-Agent': 'AlterVPN/1.0',
               },
             ));
 
   Future<List<ServerModel>> fetchServers() async {
-    // Try primary URL first, then fall back to mirror on any error.
-    for (final url in [_primaryUrl, _mirrorUrl]) {
-      try {
-        final response = await _dio.get<String>(url);
-        if (response.statusCode == 200 && response.data != null) {
-          final servers = _parseResponse(response.data!);
-          if (servers.isNotEmpty) return servers;
-        }
-      } on DioException catch (e) {
-        // Swallow and try next endpoint.
-        final msg = e.response?.statusCode != null
-            ? 'HTTP ${e.response!.statusCode}'
-            : e.message ?? e.type.name;
-        debugPrint('[VpnGateApi] $url failed: $msg — trying next endpoint.');
-      } catch (e) {
-        debugPrint('[VpnGateApi] $url failed: $e — trying next endpoint.');
+    try {
+      final response = await _dio.get<String>(_backendUrl);
+      if (response.statusCode == 200 && response.data != null) {
+        final servers = _parseResponse(response.data!);
+        if (servers.isNotEmpty) return servers;
+        throw Exception(
+          'Server list is empty. The backend returned no usable servers. '
+          'Please try again later.',
+        );
       }
+      throw Exception(
+        'Unexpected response from backend '
+        '(HTTP ${response.statusCode}). Please try again.',
+      );
+    } on DioException catch (e) {
+      final detail = e.response?.statusCode != null
+          ? 'HTTP ${e.response!.statusCode}'
+          : e.message ?? e.type.name;
+      debugPrint('[VpnGateApi] Backend request failed ($_backendUrl): $detail');
+      throw Exception(
+        'Unable to reach the server-list backend. '
+        'Please check your internet connection and try again.',
+      );
+    } catch (e) {
+      debugPrint('[VpnGateApi] fetchServers error: $e');
+      rethrow;
     }
-    throw Exception(
-      'Unable to reach VPNGate server list. '
-      'Please check your internet connection and try again.\n'
-      'Source: $_primaryUrl',
-    );
   }
 
   List<ServerModel> _parseResponse(String rawData) {
