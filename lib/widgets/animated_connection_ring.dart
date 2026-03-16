@@ -135,7 +135,7 @@ class _RingContent extends StatelessWidget {
         return Text(
           'TAP',
           style: AppTypography.mono(
-            color: textColor.withOpacity(0.4),
+            color: textColor.withValues(alpha: 0.4),
             fontSize: 11,
           ),
         );
@@ -182,7 +182,7 @@ class _RingPainter extends CustomPainter {
         );
       }
     } else {
-      paint.color = color.withOpacity(0.8);
+      paint.color = color.withValues(alpha: 0.8);
       canvas.drawCircle(center, radius, paint);
     }
   }
