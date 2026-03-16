@@ -208,13 +208,31 @@ Data Layer (repositories / APIs / services)
 
 ## Server List — Source & Configuration
 
-AlterVPN fetches its live server list from the **[VPNGate Public VPN Relay Service](https://www.vpngate.net/)** — a free, volunteer-run project maintained by the University of Tsukuba.
+AlterVPN fetches its live server list through a **Railway backend relay** hosted at:
+
+```
+https://altervpn-production.up.railway.app
+```
+
+The relay proxies the [VPNGate Public VPN Relay Service](https://www.vpngate.net/) CSV API, ensuring the server list is reachable even from regions where `vpngate.net` is blocked (e.g. UAE).
+
+### Where the endpoint is configured
+
+The production URL is defined in a single place:
+
+```dart
+// lib/core/constants/api_constants.dart
+static const String backendBaseUrl =
+    'https://altervpn-production.up.railway.app';
+```
+
+To point the app at a different relay, change `backendBaseUrl` in that file — no other file needs editing.
 
 ### How server loading works
 
 1. On app launch the `ServerController` calls `VpnGateApi.fetchServers()`.
-2. `VpnGateApi` issues a GET request to `https://www.vpngate.net/api/iphone/` (CSV format).
-3. If the primary endpoint is unreachable, it automatically retries against the mirror at `https://vpngate.net/api/iphone/`.
+2. `VpnGateApi` issues a GET request to the Railway backend at `https://altervpn-production.up.railway.app/api/iphone/`.
+3. The Railway nginx relay forwards the request to `vpngate.net` and returns the same CSV payload.
 4. CSV rows are parsed and decoded; each row's column 14 contains the Base64-encoded OpenVPN config.
 5. Results are sorted by ping (lowest first) and cached for 30 minutes.
 
@@ -222,8 +240,8 @@ AlterVPN fetches its live server list from the **[VPNGate Public VPN Relay Servi
 
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
-| Spinner never stops | No internet / firewall blocks vpngate.net | Check connectivity |
-| "Something went wrong" + error text | Network error or API temporarily down | Pull-to-refresh; the full error is shown to help diagnose |
+| Spinner never stops | No internet / Railway backend unreachable | Check connectivity |
+| "Unable to reach the server-list backend" | Network error or backend temporarily down | Pull-to-refresh; the full error is shown to help diagnose |
 | List loads but VPN won't connect | VPN permission not yet granted | Tap Connect — Android will show a permission dialog; approve it |
 
 ### Required runtime permissions (Android)
