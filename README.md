@@ -206,7 +206,40 @@ Domain Layer (controllers / notifiers)
 Data Layer (repositories / APIs / services)
 ```
 
-## License
+## Server List — Source & Configuration
+
+AlterVPN fetches its live server list from the **[VPNGate Public VPN Relay Service](https://www.vpngate.net/)** — a free, volunteer-run project maintained by the University of Tsukuba.
+
+### How server loading works
+
+1. On app launch the `ServerController` calls `VpnGateApi.fetchServers()`.
+2. `VpnGateApi` issues a GET request to `https://www.vpngate.net/api/iphone/` (CSV format).
+3. If the primary endpoint is unreachable, it automatically retries against the mirror at `https://vpngate.net/api/iphone/`.
+4. CSV rows are parsed and decoded; each row's column 14 contains the Base64-encoded OpenVPN config.
+5. Results are sorted by ping (lowest first) and cached for 30 minutes.
+
+### Why you might see an empty server list
+
+| Symptom | Likely cause | Fix |
+|---------|--------------|-----|
+| Spinner never stops | No internet / firewall blocks vpngate.net | Check connectivity |
+| "Something went wrong" + error text | Network error or API temporarily down | Pull-to-refresh; the full error is shown to help diagnose |
+| List loads but VPN won't connect | VPN permission not yet granted | Tap Connect — Android will show a permission dialog; approve it |
+
+### Required runtime permissions (Android)
+
+`openvpn_flutter` requires:
+- `android.permission.INTERNET` — already in `AndroidManifest.xml`
+- `android.permission.FOREGROUND_SERVICE` — already in `AndroidManifest.xml`
+- **VPN permission** — prompted at runtime when the user first taps Connect; handled via `onActivityResult` in `MainActivity.kt`
+
+### No hardcoded credentials needed
+
+VPNGate servers use the standard OpenVPN username/password `vpn` / `vpn`, which are embedded in the downloaded config. AlterVPN extracts these automatically from the config or falls back to that default — no secrets in the codebase.
+
+---
+
+
 
 MIT License — see [LICENSE](LICENSE) for details.
 

@@ -3,30 +3,51 @@ import 'package:csv/csv.dart';
 import 'server_model.dart';
 
 class VpnGateApi {
-  static const String _baseUrl = 'https://www.vpngate.net/api/iphone/';
+  // Primary VPNGate endpoint.
+  static const String _primaryUrl = 'https://www.vpngate.net/api/iphone/';
+
+  // Community mirror used as fallback when the primary endpoint is
+  // unreachable. Maintained by the VPNGate project.
+  static const String _mirrorUrl = 'https://vpngate.net/api/iphone/';
 
   final Dio _dio;
 
   VpnGateApi({Dio? dio})
       : _dio = dio ??
             Dio(BaseOptions(
-              connectTimeout: const Duration(seconds: 15),
-              receiveTimeout: const Duration(seconds: 30),
+              connectTimeout: const Duration(seconds: 20),
+              receiveTimeout: const Duration(seconds: 40),
               headers: {
                 'User-Agent': 'AlterVPN/1.0',
               },
             ));
 
   Future<List<ServerModel>> fetchServers() async {
-    try {
-      final response = await _dio.get<String>(_baseUrl);
-      if (response.statusCode != 200 || response.data == null) {
-        throw Exception('Failed to fetch servers: ${response.statusCode}');
+    // Try primary URL first, then fall back to mirror on any error.
+    for (final url in [_primaryUrl, _mirrorUrl]) {
+      try {
+        final response = await _dio.get<String>(url);
+        if (response.statusCode == 200 && response.data != null) {
+          final servers = _parseResponse(response.data!);
+          if (servers.isNotEmpty) return servers;
+        }
+      } on DioException catch (e) {
+        // Swallow and try next endpoint.
+        final msg = e.response?.statusCode != null
+            ? 'HTTP ${e.response!.statusCode}'
+            : e.message ?? e.type.name;
+        // ignore: avoid_print
+        print('[VpnGateApi] $url failed: $msg — trying next endpoint.');
+      } catch (e) {
+        // ignore: avoid_print
+        print('[VpnGateApi] $url failed: $e — trying next endpoint.');
       }
-      return _parseResponse(response.data!);
-    } on DioException catch (e) {
-      throw Exception('Network error: ${e.message}');
     }
+    throw Exception(
+      'Unable to reach VPNGate server list. '
+      'Please check your internet connection and try again.\n'
+      'Source: $_primaryUrl',
+    );
   }
 
   List<ServerModel> _parseResponse(String rawData) {

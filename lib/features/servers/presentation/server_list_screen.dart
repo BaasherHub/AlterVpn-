@@ -97,6 +97,22 @@ class _ServerListScreenState extends ConsumerState<ServerListScreen> {
                       AppStrings.errorTitle,
                       style: AppTypography.bodyMedium(color: textColor),
                     ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.screenPadding),
+                      child: Text(
+                        e.toString(),
+                        style: AppTypography.bodySmall(color: secondaryColor),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Check your internet connection and try again.',
+                      style: AppTypography.bodySmall(color: secondaryColor),
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 16),
                     TextButton(
                       onPressed: () =>

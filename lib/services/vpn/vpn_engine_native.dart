@@ -1,4 +1,6 @@
-import 'package:flutter/services.dart';
+import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'package:openvpn_flutter/openvpn_flutter.dart';
 import 'vpn_config_model.dart';
 import 'vpn_status_model.dart';
 
@@ -85,66 +87,77 @@ VpnStage vpnStageFromString(String stage) {
   }
 }
 
+/// VPN engine backed by the openvpn_flutter plugin.
+/// Uses a singleton [OpenVPN] instance so that stage and status streams
+/// remain alive for the lifetime of the app.
 class VpnEngine {
-  static const MethodChannel _methodChannel =
-      MethodChannel('com.altervpn/vpnControl');
-  static const EventChannel _stageChannel =
-      EventChannel('com.altervpn/vpnStage');
-  static const EventChannel _statusChannel =
-      EventChannel('com.altervpn/vpnStatus');
+  VpnEngine._();
 
-  static Stream<VpnStage> get vpnStageStream {
-    return _stageChannel.receiveBroadcastStream().map((event) {
-      return vpnStageFromString(event?.toString() ?? '');
-    });
-  }
+  static OpenVPN? _openVpn;
+  static bool _initialized = false;
 
-  static Stream<VpnStatusModel> get vpnStatusStream {
-    return _statusChannel.receiveBroadcastStream().map((event) {
-      if (event == null) return VpnStatusModel.empty();
-      final data = Map<String, dynamic>.from(event as Map);
-      return VpnStatusModel(
-        byteIn: data['byteIn']?.toString() ?? '0',
-        byteOut: data['byteOut']?.toString() ?? '0',
-        duration: data['duration']?.toString() ?? '00:00:00',
-        lastPacketReceive: data['lastPacketReceive']?.toString() ?? '0',
-        connectedOn: data['connectedOn']?.toString() ?? '',
-      );
-    });
+  static final StreamController<VpnStage> _stageController =
+      StreamController<VpnStage>.broadcast();
+  static final StreamController<VpnStatusModel> _statusController =
+      StreamController<VpnStatusModel>.broadcast();
+
+  static Stream<VpnStage> get vpnStageStream => _stageController.stream;
+  static Stream<VpnStatusModel> get vpnStatusStream =>
+      _statusController.stream;
+
+  /// Initializes the OpenVPN plugin. Safe to call multiple times.
+  static Future<void> _ensureInitialized() async {
+    if (_initialized) return;
+    _openVpn = OpenVPN(
+      onVpnStageChanged: (stage, rawStage) {
+        debugPrint('[VpnEngine] stage=$stage raw=$rawStage');
+        _stageController.add(vpnStageFromString(rawStage));
+      },
+      onVpnStatusChanged: (status) {
+        if (status == null) return;
+        _statusController.add(VpnStatusModel(
+          byteIn: status.byteIn ?? '0',
+          byteOut: status.byteOut ?? '0',
+          duration: status.duration ?? '00:00:00',
+          // lastPacketReceive is not provided by openvpn_flutter's VpnStatus.
+          lastPacketReceive: '0',
+          // connectedOn is a DateTime? in openvpn_flutter; convert to String.
+          connectedOn: status.connectedOn?.toIso8601String() ?? '',
+        ));
+      },
+    );
+    // groupIdentifier and providerBundleIdentifier are iOS-only.
+    await _openVpn!.initialize(
+      groupIdentifier: null,
+      providerBundleIdentifier: null,
+      localizedDescription: 'AlterVPN',
+    );
+    _initialized = true;
   }
 
   static Future<void> startVpn(VpnConfig config) async {
-    try {
-      await _methodChannel.invokeMethod('startVpn', {
-        'config': config.config,
-        'serverName': config.serverName,
-        'country': config.country,
-        'username': config.username,
-        'password': config.password,
-      });
-    } on PlatformException catch (e) {
-      throw Exception('Failed to start VPN: ${e.message}');
+    await _ensureInitialized();
+    if (config.config.isEmpty) {
+      throw Exception('OpenVPN config is empty — cannot connect.');
     }
+    await _openVpn!.connect(
+      config.config,
+      config.serverName,
+      username: config.username,
+      password: config.password,
+      // certIsRequired: false allows VPNGate servers that embed auth inline.
+      certIsRequired: false,
+    );
   }
 
   static Future<void> stopVpn() async {
-    try {
-      await _methodChannel.invokeMethod('stopVpn');
-    } on PlatformException catch (e) {
-      throw Exception('Failed to stop VPN: ${e.message}');
-    }
+    _openVpn?.disconnect();
+    // Emit disconnected immediately so UI updates without waiting for the
+    // native callback (which may be delayed on some devices).
+    _stageController.add(VpnStage.disconnected);
   }
 
-  static Future<String?> currentStage() async {
-    try {
-      return await _methodChannel.invokeMethod<String>('currentStage');
-    } on PlatformException {
-      return null;
-    }
-  }
+  static Future<String?> currentStage() async => null;
 
-  static Future<bool> isConnected() async {
-    final stage = await currentStage();
-    return stage?.toLowerCase() == 'connected';
-  }
+  static Future<bool> isConnected() async => false;
 }
