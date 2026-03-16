@@ -21,13 +21,11 @@ class ServerRepository {
     }
 
     final servers = await _api.fetchServers();
-    // Sort by ping ascending; servers with ping == 0 go to the end
-    servers.sort((a, b) {
-      if (a.ping == 0 && b.ping == 0) return 0;
-      if (a.ping == 0) return 1;
-      if (b.ping == 0) return -1;
-      return a.ping.compareTo(b.ping);
-    });
+    // Sort by composite quality score (higher = better):
+    //   1. Has a valid config (connectable first).
+    //   2. Has active sessions (server is reachable).
+    //   3. Lower ping (faster).
+    servers.sort((a, b) => b.qualityScore.compareTo(a.qualityScore));
     _cachedServers = servers;
     _lastFetch = now;
     return _cachedServers;

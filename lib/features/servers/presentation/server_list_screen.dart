@@ -10,6 +10,55 @@ import '../../../core/constants/app_strings.dart';
 import '../../../widgets/alter_app_bar.dart';
 import 'server_tile.dart';
 
+// ---------------------------------------------------------------------------
+// Region filter
+// ---------------------------------------------------------------------------
+
+enum _Region { all, europe, americas, asia, other }
+
+const _regionLabels = {
+  _Region.all: 'All',
+  _Region.europe: 'Europe',
+  _Region.americas: 'Americas',
+  _Region.asia: 'Asia',
+  _Region.other: 'Other',
+};
+
+// ISO 3166-1 alpha-2 codes per region
+const _europeCodes = {
+  'AL', 'AD', 'AM', 'AT', 'AZ', 'BY', 'BE', 'BA', 'BG', 'HR',
+  'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'GE', 'DE', 'GR', 'HU',
+  'IS', 'IE', 'IT', 'KZ', 'XK', 'LV', 'LI', 'LT', 'LU', 'MT',
+  'MD', 'MC', 'ME', 'NL', 'MK', 'NO', 'PL', 'PT', 'RO', 'RU',
+  'SM', 'RS', 'SK', 'SI', 'ES', 'SE', 'CH', 'TR', 'UA', 'GB',
+  'VA',
+};
+
+const _americasCodes = {
+  'AG', 'AR', 'AW', 'BS', 'BB', 'BZ', 'BO', 'BR', 'CA', 'CL',
+  'CO', 'CR', 'CU', 'DM', 'DO', 'EC', 'SV', 'GD', 'GT', 'GY',
+  'HT', 'HN', 'JM', 'MX', 'NI', 'PA', 'PY', 'PE', 'KN', 'LC',
+  'VC', 'SR', 'TT', 'US', 'UY', 'VE',
+};
+
+const _asiaCodes = {
+  'AF', 'AM', 'AZ', 'BH', 'BD', 'BT', 'BN', 'KH', 'CN', 'CY',
+  'GE', 'IN', 'ID', 'IR', 'IQ', 'IL', 'JP', 'JO', 'KZ', 'KW',
+  'KG', 'LA', 'LB', 'MY', 'MV', 'MN', 'MM', 'NP', 'KP', 'OM',
+  'PK', 'PS', 'PH', 'QA', 'SA', 'SG', 'KR', 'LK', 'SY', 'TW',
+  'TJ', 'TH', 'TL', 'TM', 'AE', 'UZ', 'VN', 'YE',
+};
+
+_Region _regionFor(ServerModel s) {
+  final code = s.countryShort.toUpperCase();
+  if (_europeCodes.contains(code)) return _Region.europe;
+  if (_americasCodes.contains(code)) return _Region.americas;
+  if (_asiaCodes.contains(code)) return _Region.asia;
+  return _Region.other;
+}
+
+// ---------------------------------------------------------------------------
+
 class ServerListScreen extends ConsumerStatefulWidget {
   const ServerListScreen({super.key});
 
@@ -20,6 +69,7 @@ class ServerListScreen extends ConsumerStatefulWidget {
 class _ServerListScreenState extends ConsumerState<ServerListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  _Region _region = _Region.all;
 
   @override
   void dispose() {
@@ -44,6 +94,7 @@ class _ServerListScreenState extends ConsumerState<ServerListScreen> {
       appBar: AlterAppBar(title: AppStrings.serversTitle),
       body: Column(
         children: [
+          // Search bar
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.screenPadding,
@@ -71,6 +122,49 @@ class _ServerListScreenState extends ConsumerState<ServerListScreen> {
               ),
             ),
           ),
+          // Region filter chips
+          SizedBox(
+            height: 36,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenPadding),
+              children: _Region.values.map((r) {
+                final selected = _region == r;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _region = r),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? AppColors.accentGold
+                            : Colors.transparent,
+                        border: Border.all(
+                          color: selected
+                              ? AppColors.accentGold
+                              : borderColor,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        _regionLabels[r]!,
+                        style: AppTypography.bodySmall(
+                          color: selected
+                              ? AppColors.darkBackground
+                              : secondaryColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 8),
           Expanded(
             child: serversAsync.when(
               loading: () => Center(
@@ -127,15 +221,25 @@ class _ServerListScreenState extends ConsumerState<ServerListScreen> {
                 ),
               ),
               data: (servers) {
-                final filtered = _searchQuery.isEmpty
+                // Apply search filter
+                var filtered = _searchQuery.isEmpty
                     ? servers
                     : servers
                         .where((s) =>
                             s.countryLong
                                 .toLowerCase()
                                 .contains(_searchQuery) ||
-                            s.hostName.toLowerCase().contains(_searchQuery))
+                            s.displayName
+                                .toLowerCase()
+                                .contains(_searchQuery))
                         .toList();
+
+                // Apply region filter
+                if (_region != _Region.all) {
+                  filtered = filtered
+                      .where((s) => _regionFor(s) == _region)
+                      .toList();
+                }
 
                 if (filtered.isEmpty) {
                   return Center(
@@ -162,6 +266,8 @@ class _ServerListScreenState extends ConsumerState<ServerListScreen> {
                       final country = grouped.keys.elementAt(index);
                       final countryServers = grouped[country]!;
                       final firstServer = countryServers.first;
+                      final connectableCount =
+                          countryServers.where((s) => s.hasConfig).length;
 
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,16 +282,24 @@ class _ServerListScreenState extends ConsumerState<ServerListScreen> {
                                   style: const TextStyle(fontSize: 16),
                                 ),
                                 const SizedBox(width: 8),
-                                Text(
-                                  country,
-                                  style: AppTypography.headingMedium(
-                                      color: textColor),
+                                Expanded(
+                                  child: Text(
+                                    country,
+                                    style: AppTypography.headingMedium(
+                                        color: textColor),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  '(${countryServers.length})',
+                                  connectableCount == 0
+                                      ? 'None available'
+                                      : '$connectableCount / ${countryServers.length}',
                                   style: AppTypography.bodySmall(
-                                      color: secondaryColor),
+                                    color: connectableCount == 0
+                                        ? secondaryColor.withValues(alpha: 0.5)
+                                        : secondaryColor,
+                                  ),
                                 ),
                               ],
                             ),

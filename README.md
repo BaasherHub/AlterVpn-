@@ -234,7 +234,35 @@ To point the app at a different relay, change `backendBaseUrl` in that file — 
 2. `VpnGateApi` issues a GET request to the Railway backend at `https://altervpn-production.up.railway.app/api/iphone/`.
 3. The Railway nginx relay forwards the request to `vpngate.net` and returns the same CSV payload.
 4. CSV rows are parsed and decoded; each row's column 14 contains the Base64-encoded OpenVPN config.
-5. Results are sorted by ping (lowest first) and cached for 30 minutes.
+5. Results are sorted by quality score (config present → active sessions → lower ping) and cached for 30 minutes.
+
+### Required backend fields for a connectable server entry
+
+The app supports two backend response formats: **VPNGate CSV** (default) and **JSON array**.
+
+#### VPNGate CSV (relay mode)
+The standard VPNGate CSV column layout.  Column 14 (`OpenVPN_ConfigData_Base64`) must be non-empty for a server to be connectable.  The base64 string may contain embedded newlines — the app strips them before decoding.
+
+```
+#HostName,IP,Score,Ping,Speed,CountryLong,CountryShort,NumVpnSessions,…,OpenVPN_ConfigData_Base64
+```
+
+#### JSON array (custom backend)
+If your backend returns a JSON array, each object must include at least one config field:
+
+| JSON field | Required? | Notes |
+|---|---|---|
+| `hostName` or `serverName` | ✓ | Unique identifier shown in the server list |
+| `ip` | ✓ | Server IP address |
+| `countryLong` or `country` | ✓ | Full country name for grouping (e.g. `"Germany"`) |
+| `countryShort` or `countryCode` | ✓ | ISO 3166-1 alpha-2 code for flag emoji (e.g. `"DE"`) |
+| `ovpnConfig` | one of these | Raw plain-text OpenVPN config (takes precedence) |
+| `openVpnConfigDataBase64` or `openVpnConfig` | one of these | Base64-encoded OpenVPN config |
+| `numVpnSessions` or `sessions` | optional | Active session count for UI display |
+| `ping` | optional | Ping latency in ms; `0` = unknown |
+| `speed` | optional | Speed in bytes/s |
+
+A server entry with **no config field** is treated as non-connectable and shown greyed-out in the list.
 
 ### Why you might see an empty server list
 
@@ -242,6 +270,7 @@ To point the app at a different relay, change `backendBaseUrl` in that file — 
 |---------|--------------|-----|
 | Spinner never stops | No internet / Railway backend unreachable | Check connectivity |
 | "Unable to reach the server-list backend" | Network error or backend temporarily down | Pull-to-refresh; the full error is shown to help diagnose |
+| List loads but server shows "Unavailable" | Server entry has no OpenVPN config | Ensure backend includes `ovpnConfig` or `openVpnConfigDataBase64` |
 | List loads but VPN won't connect | VPN permission not yet granted | Tap Connect — Android will show a permission dialog; approve it |
 
 ### Required runtime permissions (Android)
