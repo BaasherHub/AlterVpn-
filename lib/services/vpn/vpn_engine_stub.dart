@@ -77,6 +77,8 @@ VpnStage vpnStageFromString(String stage) {
     case 'noprocess':
       return VpnStage.disconnected;
     case 'vpn_generate_config':
+      // Normal intermediate step — not a denial.
+      return VpnStage.prepare;
     case 'denied':
       return VpnStage.denied;
     case 'reconnecting':
@@ -93,6 +95,9 @@ class VpnEngine {
 
   static Stream<VpnStatusModel> get vpnStatusStream =>
       Stream.value(VpnStatusModel.empty());
+
+  /// No-op on this platform — satisfies the shared Settings call site.
+  static Future<void> initialize() async {}
 
   static Future<void> startVpn(VpnConfig config) async {
     throw UnsupportedError('VPN is not supported on this platform.');

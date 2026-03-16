@@ -78,6 +78,8 @@ VpnStage vpnStageFromString(String stage) {
     case 'noprocess':
       return VpnStage.disconnected;
     case 'vpn_generate_config':
+      // Normal intermediate step — not a denial.
+      return VpnStage.prepare;
     case 'denied':
       return VpnStage.denied;
     case 'reconnecting':
@@ -103,6 +105,9 @@ class VpnEngine {
   static Stream<VpnStage> get vpnStageStream => _stageController.stream;
 
   static Stream<VpnStatusModel> get vpnStatusStream => _statusController.stream;
+
+  /// No-op on web — satisfies the shared Settings call site.
+  static Future<void> initialize() async {}
 
   static Future<void> startVpn(VpnConfig config) async {
     final stages = [

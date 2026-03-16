@@ -5,6 +5,7 @@ import '../../servers/domain/server_controller.dart';
 import '../../../services/vpn/vpn_engine.dart';
 import '../../../services/vpn/vpn_config_model.dart';
 import '../../../services/vpn/vpn_status_model.dart';
+import '../../../core/constants/app_strings.dart';
 import 'connection_state.dart';
 import 'session_controller.dart';
 
@@ -79,7 +80,7 @@ class ConnectionController extends Notifier<AlterConnectionState> {
       state = state.copyWith(
         status: ConnectionStatus.error,
         vpnStage: stage,
-        errorMessage: 'VPN permission denied',
+        errorMessage: AppStrings.permissionDenied,
       );
     } else if (stage.isConnecting) {
       state = state.copyWith(

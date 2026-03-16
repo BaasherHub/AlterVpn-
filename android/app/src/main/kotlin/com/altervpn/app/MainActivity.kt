@@ -9,7 +9,12 @@ class MainActivity : FlutterActivity() {
     // When the user approves the VPN permission dialog, we forward the result
     // so the plugin can start the OpenVPN service.
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        OpenVPNFlutterPlugin.connectWhileGranted(requestCode == VPN_PERMISSION_REQUEST_CODE && resultCode == RESULT_OK)
+        // Only forward VPN permission results to the plugin.
+        // Passing false for unrelated activity results previously caused a
+        // spurious "permission denied" state in the VPN engine.
+        if (requestCode == VPN_PERMISSION_REQUEST_CODE) {
+            OpenVPNFlutterPlugin.connectWhileGranted(resultCode == RESULT_OK)
+        }
         super.onActivityResult(requestCode, resultCode, data)
     }
 

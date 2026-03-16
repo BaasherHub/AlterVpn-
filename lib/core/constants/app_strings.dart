@@ -49,6 +49,13 @@ class AppStrings {
   static const String killSwitchSubtitle = 'Block traffic if VPN drops';
   static const String autoConnect = 'Auto Connect';
   static const String autoConnectSubtitle = 'Connect on app launch';
+  static const String installVpnProfile = 'Install VPN Profile';
+  static const String installVpnProfileSubtitle =
+      'Request VPN permission / reinstall profile';
+  static const String installVpnProfileSuccess =
+      'VPN profile check complete. You can now connect.';
+  static const String installVpnProfileError =
+      'Could not install VPN profile. Please try again.';
   static const String appearanceSection = 'Appearance';
   static const String darkMode = 'Dark Mode';
   static const String darkModeSubtitle = 'Use dark theme';
@@ -60,6 +67,7 @@ class AppStrings {
   // Errors
   static const String errorTitle = 'Something went wrong';
   static const String errorRetry = 'Retry';
-  static const String permissionDenied = 'VPN permission denied';
+  static const String permissionDenied =
+      'VPN permission denied. Go to Settings → Install VPN Profile and accept the prompt.';
   static const String connectionFailed = 'Connection failed';
 }

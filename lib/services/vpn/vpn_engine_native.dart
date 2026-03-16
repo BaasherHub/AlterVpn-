@@ -77,6 +77,9 @@ VpnStage vpnStageFromString(String stage) {
     case 'noprocess':
       return VpnStage.disconnected;
     case 'vpn_generate_config':
+      // vpn_generate_config is a normal intermediate step where Android
+      // generates the VPN tunnel config — NOT a permission denial.
+      return VpnStage.prepare;
     case 'denied':
       return VpnStage.denied;
     case 'reconnecting':
@@ -107,6 +110,12 @@ class VpnEngine {
   static Stream<VpnStage> get vpnStageStream => _stageController.stream;
   static Stream<VpnStatusModel> get vpnStatusStream =>
       _statusController.stream;
+
+  /// Explicitly initialises the VPN plugin and requests the OS VPN permission
+  /// (and profile installation on Android). Safe to call multiple times.
+  /// Useful from Settings so users can pre-install the profile without
+  /// needing to trigger a full connect attempt.
+  static Future<void> initialize() => _ensureInitialized();
 
   /// Initializes the OpenVPN plugin. Safe to call multiple times.
   static Future<void> _ensureInitialized() async {
