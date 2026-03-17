@@ -29,8 +29,8 @@ A privacy-first VPN client for Android built with Flutter, connecting to the [VP
 - 📊 **Real-time stats** — live download/upload speed and session timer
 - 🌙 **Dark / Light theme** — minimal palette with Playfair Display + DM Sans
 - 🔧 **Kill Switch & Auto-Connect** settings (stored locally, no cloud)
-- 🗂 **Country grouping** — servers sorted by ping, grouped by country with flag emoji
-- 🔍 **Search** — filter servers by country or hostname
+- 🗂 **Country grouping** — servers sorted by health/ping, grouped by country with flag emoji; city-level labels when provided
+- 🔍 **Search** — filter servers by country, city, or hostname
 
 ## Tech Stack
 
@@ -234,7 +234,7 @@ To point the app at a different relay, change `backendBaseUrl` in that file — 
 2. `VpnGateApi` issues a GET request to the Railway backend at `https://altervpn-production.up.railway.app/api/iphone/`.
 3. The Railway nginx relay forwards the request to `vpngate.net` and returns the same CSV payload.
 4. CSV rows are parsed and decoded; each row's column 14 contains the Base64-encoded OpenVPN config.
-5. Results are sorted by quality score (config present → active sessions → lower ping) and cached for 30 minutes.
+5. Results are sorted by quality score (health online → config present → active sessions → lower latency → lower load) and cached for 30 minutes.
 
 ### Required backend fields for a connectable server entry
 
@@ -253,16 +253,29 @@ If your backend returns a JSON array, each object must include at least one conf
 | JSON field | Required? | Notes |
 |---|---|---|
 | `hostName` or `serverName` | ✓ | Unique identifier shown in the server list |
-| `ip` | ✓ | Server IP address |
+| `ip` or `host` | ✓ | Server IP address |
 | `countryLong` or `country` | ✓ | Full country name for grouping (e.g. `"Germany"`) |
 | `countryShort` or `countryCode` | ✓ | ISO 3166-1 alpha-2 code for flag emoji (e.g. `"DE"`) |
 | `ovpnConfig` | one of these | Raw plain-text OpenVPN config (takes precedence) |
 | `openVpnConfigDataBase64` or `openVpnConfig` | one of these | Base64-encoded OpenVPN config |
-| `numVpnSessions` or `sessions` | optional | Active session count for UI display |
-| `ping` | optional | Ping latency in ms; `0` = unknown |
+| `id` | optional | Stable server identifier (shown in debug logs) |
+| `city` | optional | City name shown in the tile (e.g. `"Frankfurt"`); if absent, hostname is used |
+| `region` | optional | Region tag: `EU`, `US`, `AM`, `AS`, `ME`; used for region filter tab |
+| `protocol` | optional | `"openvpn"` or `"wireguard"` |
+| `transport` | optional | `"udp"` or `"tcp"` |
+| `port` | optional | Server port number |
+| `isPremium` | optional | `true` / `false`; reserved for future premium filtering |
+| `health` | optional | `"online"`, `"degraded"`, or `"offline"`; drives sort priority and tile dot colour |
+| `latencyMs` | optional | Measured RTT in ms; takes precedence over `ping` for sorting and display |
+| `loadPercent` | optional | Server load 0–100 |
+| `lastCheckedAt` | optional | ISO 8601 timestamp of last health probe |
+| `numVpnSessions` or `sessions` | optional | Active session count for display |
+| `ping` | optional | Legacy latency field in ms; `0` = unknown |
 | `speed` | optional | Speed in bytes/s |
 
-A server entry with **no config field** is treated as non-connectable and shown greyed-out in the list.
+A server entry with **no config field** is excluded from the list and the reason is logged to the debug console.
+
+> **Backward compatibility:** All new fields are optional. Existing Railway/VPNGate payloads that omit them continue to work without any changes.
 
 ### Why you might see an empty server list
 

@@ -68,7 +68,8 @@ class VpnGateApi {
   ///
   /// Each object is normalised via [ServerModel.fromJson], which supports
   /// both raw-text configs (`ovpnConfig`) and base64 blobs
-  /// (`openVpnConfigDataBase64`).
+  /// (`openVpnConfigDataBase64`). Entries that fail validation are excluded
+  /// and the rejection reason is logged for debugging.
   List<ServerModel> _parseJson(String jsonData) {
     try {
       final dynamic decoded = json.decode(jsonData);
@@ -76,25 +77,33 @@ class VpnGateApi {
           ? decoded
           : (decoded['servers'] as List? ?? [decoded]);
       final servers = <ServerModel>[];
+      int skipped = 0;
       for (final item in list) {
         if (item is! Map<String, dynamic>) {
-          debugPrint('[VpnGateApi] Skipping non-object JSON item: $item');
+          debugPrint(
+              '[VpnGateApi] SKIP reason=non_object item: $item');
+          skipped++;
           continue;
         }
         try {
           final server = ServerModel.fromJson(item);
           if (!server.hasConfig) {
             debugPrint(
-                '[VpnGateApi] JSON server missing config, skipping: '
-                '${server.hostName}');
+                '[VpnGateApi] SKIP reason=no_config '
+                'id=${server.id} host=${server.hostName}');
+            skipped++;
             continue;
           }
           servers.add(server);
         } catch (e) {
-          debugPrint('[VpnGateApi] Failed to parse JSON server object: $e');
+          debugPrint(
+              '[VpnGateApi] SKIP reason=parse_error error=$e '
+              'entry=${item['hostName'] ?? item['id'] ?? '?'}');
+          skipped++;
         }
       }
-      debugPrint('[VpnGateApi] Parsed ${servers.length} servers from JSON');
+      debugPrint(
+          '[VpnGateApi] JSON parsed=${servers.length} skipped=$skipped');
       return servers;
     } catch (e) {
       debugPrint('[VpnGateApi] JSON parse error: $e');
@@ -136,8 +145,8 @@ class VpnGateApi {
         final base64Config = row[14]?.toString() ?? '';
         if (base64Config.isEmpty) {
           debugPrint(
-              '[VpnGateApi] CSV row $i missing config (col 14), skipping: '
-              '${row[0]}');
+              '[VpnGateApi] SKIP reason=no_config(csv) row=$i '
+              'host=${row[0]}');
           continue;
         }
 
@@ -154,12 +163,12 @@ class VpnGateApi {
           supportsTcp: true,
         ));
       } catch (e) {
-        debugPrint('[VpnGateApi] Failed to parse CSV row $i: $e');
+        debugPrint('[VpnGateApi] SKIP reason=parse_error(csv) row=$i error=$e');
         continue;
       }
     }
 
-    debugPrint('[VpnGateApi] Parsed ${servers.length} servers from CSV');
+    debugPrint('[VpnGateApi] CSV parsed=${servers.length}');
     return servers;
   }
 }
