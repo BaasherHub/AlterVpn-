@@ -50,6 +50,20 @@ const _asiaCodes = {
 };
 
 _Region _regionFor(ServerModel s) {
+  // Prefer the backend-supplied region tag when available.
+  if (s.region.isNotEmpty) {
+    switch (s.region.toUpperCase()) {
+      case 'EU':
+        return _Region.europe;
+      case 'US':
+      case 'AM':
+        return _Region.americas;
+      case 'AS':
+      case 'ME':
+        return _Region.asia;
+    }
+  }
+
   final code = s.countryShort.toUpperCase();
   if (_europeCodes.contains(code)) return _Region.europe;
   if (_americasCodes.contains(code)) return _Region.americas;
@@ -227,6 +241,9 @@ class _ServerListScreenState extends ConsumerState<ServerListScreen> {
                     : servers
                         .where((s) =>
                             s.countryLong
+                                .toLowerCase()
+                                .contains(_searchQuery) ||
+                            s.city
                                 .toLowerCase()
                                 .contains(_searchQuery) ||
                             s.displayName

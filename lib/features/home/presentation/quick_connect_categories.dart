@@ -63,7 +63,7 @@ class QuickConnectCategories extends ConsumerWidget {
 
   void _selectFastest(WidgetRef ref, List<ServerModel> servers) {
     final sorted = List<ServerModel>.from(servers)
-      ..sort((a, b) => a.ping.compareTo(b.ping));
+      ..sort((a, b) => a.effectiveLatency.compareTo(b.effectiveLatency));
     _select(ref, sorted.first);
   }
 
@@ -78,7 +78,7 @@ class QuickConnectCategories extends ConsumerWidget {
       _selectFastest(ref, servers);
       return;
     }
-    hub.sort((a, b) => a.ping.compareTo(b.ping));
+    hub.sort((a, b) => a.effectiveLatency.compareTo(b.effectiveLatency));
     _select(ref, hub.first);
   }
 

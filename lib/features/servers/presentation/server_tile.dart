@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../data/server_model.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 
@@ -36,18 +35,11 @@ class ServerTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Row(
             children: [
-              if (isSelected)
-                Container(
-                  width: 6,
-                  height: 6,
-                  margin: const EdgeInsets.only(right: 12),
-                  decoration: const BoxDecoration(
-                    color: AppColors.accentGreen,
-                    shape: BoxShape.circle,
-                  ),
-                )
-              else
-                const SizedBox(width: 18),
+              // Selection / health indicator dot
+              _LeadingDot(
+                isSelected: isSelected,
+                health: server.health,
+              ),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,45 +51,23 @@ class ServerTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Text(
-                          '${server.numVpnSessions} ${AppStrings.sessions}',
-                          style:
-                              AppTypography.bodySmall(color: secondaryColor),
-                        ),
-                        if (!connectable) ...[
-                          const SizedBox(width: 6),
-                          Text(
-                            '· Unavailable',
-                            style: AppTypography.bodySmall(
-                                color: unavailableColor),
-                          ),
-                        ],
-                      ],
+                    Text(
+                      connectable
+                          ? server.metaLine
+                          : '${server.metaLine} · Unavailable',
+                      style: AppTypography.bodySmall(color: secondaryColor),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    Formatters.formatPing(server.ping),
-                    style: AppTypography.mono(
-                      color: _pingColor(server.ping),
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    Formatters.formatSpeed(server.speedMbps),
-                    style: AppTypography.mono(
-                      color: secondaryColor,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
+              // Right-side latency indicator (quick visual scan)
+              Text(
+                Formatters.formatPing(server.effectiveLatency),
+                style: AppTypography.mono(
+                  color: _latencyColor(server.effectiveLatency),
+                  fontSize: 12,
+                ),
               ),
             ],
           ),
@@ -106,10 +76,45 @@ class ServerTile extends StatelessWidget {
     );
   }
 
-  Color _pingColor(int ping) {
-    if (ping <= 0) return AppColors.darkTextSecondary;
-    if (ping < 50) return AppColors.accentGreen;
-    if (ping < 150) return AppColors.accentGold;
+  Color _latencyColor(int ms) {
+    if (ms <= 0) return AppColors.darkTextSecondary;
+    if (ms < 50) return AppColors.accentGreen;
+    if (ms < 150) return AppColors.accentGold;
     return const Color(0xFF8B2E2E);
+  }
+}
+
+/// Leading dot: gold when selected, health-coloured when health is known,
+/// otherwise an empty spacer so the tile rows stay aligned.
+class _LeadingDot extends StatelessWidget {
+  final bool isSelected;
+  final String? health;
+
+  const _LeadingDot({required this.isSelected, this.health});
+
+  @override
+  Widget build(BuildContext context) {
+    Color? dotColor;
+    if (isSelected) {
+      dotColor = AppColors.accentGreen;
+    } else if (health == ServerHealth.online) {
+      dotColor = AppColors.accentGreen;
+    } else if (health == ServerHealth.degraded) {
+      dotColor = AppColors.accentGold;
+    } else if (health == ServerHealth.offline) {
+      dotColor = const Color(0xFF8B2E2E);
+    }
+
+    if (dotColor == null) return const SizedBox(width: 18);
+
+    return Container(
+      width: 6,
+      height: 6,
+      margin: const EdgeInsets.only(right: 12),
+      decoration: BoxDecoration(
+        color: dotColor,
+        shape: BoxShape.circle,
+      ),
+    );
   }
 }
