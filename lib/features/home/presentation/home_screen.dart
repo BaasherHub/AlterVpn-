@@ -6,6 +6,7 @@ import '../../connection/domain/connection_state.dart';
 import '../../connection/domain/session_controller.dart';
 import '../../connection/presentation/connection_button.dart';
 import '../../connection/presentation/connection_status_bar.dart';
+import '../../servers/domain/server_controller.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/constants/app_spacing.dart';
@@ -134,7 +135,9 @@ class HomeScreen extends ConsumerWidget {
                   // Status text when not connected
                   if (!connectionState.isConnected)
                     Text(
-                      _getStatusText(connectionState, sessionData),
+                      _getStatusText(
+                          connectionState, sessionData,
+                          noServers: _noHealthyServers(ref)),
                       style: AppTypography.bodySmall(
                           color: secondaryColor),
                     ),
@@ -168,7 +171,8 @@ class HomeScreen extends ConsumerWidget {
   }
 
   String _getStatusText(
-      AlterConnectionState state, SessionData sessionData) {
+      AlterConnectionState state, SessionData sessionData,
+      {bool noServers = false}) {
     switch (state.status) {
       case ConnectionStatus.connecting:
         return state.vpnStage.displayName;
@@ -177,10 +181,18 @@ class HomeScreen extends ConsumerWidget {
       case ConnectionStatus.error:
         return state.errorMessage ?? AppStrings.connectionFailed;
       default:
+        if (noServers) return AppStrings.noHealthyServers;
         if (state.selectedServer == null) return AppStrings.selectServer;
         if (sessionData.hasFreePass) return 'Connect Free';
         return 'Watch Ad & Connect';
     }
+  }
+
+  /// Returns `true` when the server list has loaded but contains no healthy
+  /// US servers, so the connect button should be blocked.
+  static bool _noHealthyServers(WidgetRef ref) {
+    final serversAsync = ref.watch(serverControllerProvider);
+    return serversAsync.whenOrNull(data: (servers) => servers.isEmpty) == true;
   }
 }
 

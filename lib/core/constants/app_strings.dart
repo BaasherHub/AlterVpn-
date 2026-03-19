@@ -70,4 +70,16 @@ class AppStrings {
   static const String permissionDenied =
       'VPN permission denied. Go to Settings → Install VPN Profile and accept the prompt.';
   static const String connectionFailed = 'Connection failed';
+  static const String invalidProfile =
+      'Invalid server profile. Please select a different server.';
+  static const String authFailure =
+      'Authentication failed. Please check your credentials and try again.';
+  static const String transportTimeout =
+      'Network unreachable. Please check your internet connection and try again.';
+  static const String serverUnavailable =
+      'Server unavailable. Please try again later.';
+  static const String noHealthyServers =
+      'No available US servers right now. Please try again later.';
+  static const String connectInProgress =
+      'A connection attempt is already in progress. Please wait.';
 }
