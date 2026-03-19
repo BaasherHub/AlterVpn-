@@ -235,6 +235,39 @@ class _ServerListScreenState extends ConsumerState<ServerListScreen> {
                 ),
               ),
               data: (servers) {
+                // Show a graceful blocking message when no healthy US servers
+                // are available at all (before search / region filtering).
+                if (servers.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.screenPadding),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            AppStrings.noHealthyServers,
+                            style:
+                                AppTypography.bodyMedium(color: secondaryColor),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          TextButton(
+                            onPressed: () => ref
+                                .read(serverControllerProvider.notifier)
+                                .refresh(),
+                            child: Text(
+                              AppStrings.errorRetry,
+                              style: AppTypography.bodyMedium(
+                                  color: AppColors.accentGold),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
                 // Apply search filter
                 var filtered = _searchQuery.isEmpty
                     ? servers

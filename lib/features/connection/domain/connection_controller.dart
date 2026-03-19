@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../servers/data/server_model.dart';
 import '../../servers/domain/server_controller.dart';
@@ -6,6 +7,8 @@ import '../../../services/vpn/vpn_engine.dart';
 import '../../../services/vpn/vpn_config_model.dart';
 import '../../../services/vpn/vpn_status_model.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/utils/ovpn_validator.dart';
+import '../../../core/utils/vpn_error_mapper.dart';
 import 'connection_state.dart';
 import 'session_controller.dart';
 
@@ -14,10 +17,20 @@ final connectionControllerProvider =
   ConnectionController.new,
 );
 
+/// Maximum time allowed for a single connection attempt before it is
+/// considered a timeout failure.
+const _kConnectTimeout = Duration(seconds: 30);
+
 class ConnectionController extends Notifier<AlterConnectionState> {
   StreamSubscription<VpnStage>? _stageSubscription;
   StreamSubscription<VpnStatusModel>? _statusSubscription;
   Timer? _durationTimer;
+
+  /// Guards against duplicate concurrent connect calls.
+  bool _connectInProgress = false;
+
+  /// Timeout timer for the current connection attempt.
+  Timer? _connectTimeoutTimer;
 
   @override
   AlterConnectionState build() {
@@ -28,6 +41,7 @@ class ConnectionController extends Notifier<AlterConnectionState> {
       _stageSubscription?.cancel();
       _statusSubscription?.cancel();
       _durationTimer?.cancel();
+      _connectTimeoutTimer?.cancel();
     });
     return const AlterConnectionState();
   }
@@ -62,32 +76,53 @@ class ConnectionController extends Notifier<AlterConnectionState> {
 
   void _handleStageChange(VpnStage stage) {
     if (stage.isConnected && !state.isConnected) {
-      _startTimer();
-      state = state.copyWith(
-        status: ConnectionStatus.connected,
-        vpnStage: stage,
-        clearError: true,
-      );
+      _onConnected();
     } else if (stage == VpnStage.disconnected || stage == VpnStage.unknown) {
-      _stopTimer();
-      state = state.copyWith(
-        status: ConnectionStatus.disconnected,
-        vpnStage: stage,
-        connectionDuration: Duration.zero,
-      );
+      _onDisconnected(stage);
     } else if (stage == VpnStage.denied) {
-      _stopTimer();
-      state = state.copyWith(
-        status: ConnectionStatus.error,
-        vpnStage: stage,
-        errorMessage: AppStrings.permissionDenied,
-      );
+      _onDenied();
     } else if (stage.isConnecting) {
       state = state.copyWith(
         status: ConnectionStatus.connecting,
         vpnStage: stage,
       );
     }
+  }
+
+  void _onConnected() {
+    debugPrint('[ConnectionController] connect_result=connected');
+    _cancelConnectTimeout();
+    _connectInProgress = false;
+    _startTimer();
+    state = state.copyWith(
+      status: ConnectionStatus.connected,
+      vpnStage: VpnStage.connected,
+      clearError: true,
+    );
+  }
+
+  void _onDisconnected(VpnStage stage) {
+    debugPrint('[ConnectionController] connect_result=disconnected stage=$stage');
+    _cancelConnectTimeout();
+    _connectInProgress = false;
+    _stopTimer();
+    state = state.copyWith(
+      status: ConnectionStatus.disconnected,
+      vpnStage: stage,
+      connectionDuration: Duration.zero,
+    );
+  }
+
+  void _onDenied() {
+    debugPrint('[ConnectionController] connect_result=denied');
+    _cancelConnectTimeout();
+    _connectInProgress = false;
+    _stopTimer();
+    state = state.copyWith(
+      status: ConnectionStatus.error,
+      vpnStage: VpnStage.denied,
+      errorMessage: AppStrings.permissionDenied,
+    );
   }
 
   void _startTimer() {
@@ -107,6 +142,33 @@ class ConnectionController extends Notifier<AlterConnectionState> {
     _durationTimer = null;
   }
 
+  void _cancelConnectTimeout() {
+    _connectTimeoutTimer?.cancel();
+    _connectTimeoutTimer = null;
+  }
+
+  /// Starts the connection timeout watchdog.
+  ///
+  /// If [_kConnectTimeout] elapses while we are still in a connecting state,
+  /// the attempt is cancelled and a clear timeout error is surfaced.
+  void _startConnectTimeout(ServerModel server) {
+    _cancelConnectTimeout();
+    _connectTimeoutTimer = Timer(_kConnectTimeout, () async {
+      if (!state.isConnecting) return; // already resolved
+
+      debugPrint(
+        '[ConnectionController] connect_timeout '
+        'server=${server.id.isNotEmpty ? server.id : server.hostName}',
+      );
+      _connectInProgress = false;
+      await VpnEngine.stopVpn();
+      state = state.copyWith(
+        status: ConnectionStatus.error,
+        errorMessage: AppStrings.transportTimeout,
+      );
+    });
+  }
+
   Future<void> toggleConnection() async {
     if (state.isConnected || state.isConnecting) {
       await disconnect();
@@ -116,47 +178,88 @@ class ConnectionController extends Notifier<AlterConnectionState> {
   }
 
   Future<void> connect() async {
+    // Guard: ignore duplicate connect calls while one is in progress.
+    if (_connectInProgress) {
+      debugPrint('[ConnectionController] connect_ignored reason=already_in_progress');
+      return;
+    }
+
     final server =
         state.selectedServer ?? ref.read(selectedServerProvider);
 
-    if (server == null) return;
+    if (server == null) {
+      debugPrint('[ConnectionController] connect_ignored reason=no_server_selected');
+      return;
+    }
 
     await _doConnect(server);
   }
 
   Future<void> _doConnect(ServerModel server) async {
+    _connectInProgress = true;
     state = state.copyWith(
       status: ConnectionStatus.connecting,
       clearError: true,
     );
 
+    debugPrint(
+      '[ConnectionController] connect_start '
+      'server_id=${server.id.isNotEmpty ? server.id : server.hostName} '
+      'country=${server.countryShort}',
+    );
+
+    // --- Preflight: decode config ------------------------------------------
+    final vpnConfig = server.openVpnConfig;
+
+    // --- Preflight: validate profile ---------------------------------------
+    final validation = OvpnValidator.validate(vpnConfig.isEmpty ? null : vpnConfig);
+    debugPrint(
+      '[ConnectionController] profile_validation '
+      'server_id=${server.id.isNotEmpty ? server.id : server.hostName} '
+      'valid=${validation.isValid}',
+    );
+
+    if (!validation.isValid) {
+      _connectInProgress = false;
+      state = state.copyWith(
+        status: ConnectionStatus.error,
+        errorMessage: validation.errorMessage,
+      );
+      return;
+    }
+
+    // --- Connect ----------------------------------------------------------
     try {
-      final vpnConfig = server.openVpnConfig;
-      if (vpnConfig.isEmpty) {
-        // Surface a clear, actionable message before even calling the engine.
-        state = state.copyWith(
-          status: ConnectionStatus.error,
-          errorMessage:
-              'This server has no OpenVPN config. '
-              'Please return to the server list and choose a different server.',
-        );
-        return;
-      }
       final config = VpnConfig(
         config: vpnConfig,
         serverName: server.hostName,
         country: server.countryLong,
       );
+
+      // Start timeout watchdog before handing off to the native engine.
+      _startConnectTimeout(server);
+
       await VpnEngine.startVpn(config);
     } catch (e) {
+      _cancelConnectTimeout();
+      _connectInProgress = false;
+      final mapped = VpnErrorMapper.map(e.toString());
+      debugPrint(
+        '[ConnectionController] connect_error '
+        'category=${mapped.category} '
+        'server_id=${server.id.isNotEmpty ? server.id : server.hostName}',
+      );
       state = state.copyWith(
         status: ConnectionStatus.error,
-        errorMessage: e.toString(),
+        errorMessage: mapped.userMessage,
       );
     }
   }
 
   Future<void> disconnect() async {
+    debugPrint('[ConnectionController] disconnect_start');
+    _cancelConnectTimeout();
+    _connectInProgress = false;
     state = state.copyWith(status: ConnectionStatus.disconnecting);
     try {
       await VpnEngine.stopVpn();
@@ -167,6 +270,7 @@ class ConnectionController extends Notifier<AlterConnectionState> {
     _stopTimer();
     // End the session timer.
     await ref.read(sessionControllerProvider.notifier).endSession();
+    debugPrint('[ConnectionController] disconnect_complete');
     state = state.copyWith(
       status: ConnectionStatus.disconnected,
       connectionDuration: Duration.zero,
@@ -174,6 +278,11 @@ class ConnectionController extends Notifier<AlterConnectionState> {
   }
 
   void selectServer(ServerModel server) {
+    debugPrint(
+      '[ConnectionController] server_selected '
+      'id=${server.id.isNotEmpty ? server.id : server.hostName} '
+      'country=${server.countryShort}',
+    );
     state = state.copyWith(selectedServer: server);
     ref.read(selectedServerProvider.notifier).state = server;
   }
