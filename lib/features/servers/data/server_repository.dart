@@ -79,4 +79,30 @@ class ServerRepository {
     _cachedServers = [];
     _lastFetch = null;
   }
+
+  /// Returns the raw OpenVPN config text for [server].
+  ///
+  /// If [server] has an inline config (via [ServerModel.rawConfig] or
+  /// [ServerModel.openVpnConfigDataBase64]), it is returned immediately.
+  /// Otherwise, if [server.ovpnUrl] is non-empty, the profile is downloaded
+  /// from that URL via the API client.
+  ///
+  /// Throws an [Exception] if no config source is available or the download
+  /// fails.
+  Future<String> resolveConfig(ServerModel server) async {
+    final inline = server.openVpnConfig;
+    if (inline.isNotEmpty) return inline;
+
+    if (server.ovpnUrl.isNotEmpty) {
+      debugPrint(
+        '[ServerRepository] resolveConfig fetch_url=${server.ovpnUrl}',
+      );
+      return _api.fetchRawConfig(server.ovpnUrl);
+    }
+
+    throw Exception(
+      'No VPN configuration available for this server. '
+      'Please select a different server or try again later.',
+    );
+  }
 }

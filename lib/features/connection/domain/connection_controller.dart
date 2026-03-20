@@ -208,8 +208,27 @@ class ConnectionController extends Notifier<AlterConnectionState> {
       'country=${server.countryShort}',
     );
 
-    // --- Preflight: decode config ------------------------------------------
-    final vpnConfig = server.openVpnConfig;
+    // --- Preflight: decode / fetch config ----------------------------------
+    // For servers with inline configs (base64 or raw text) this is immediate.
+    // For servers with ovpnUrl, the profile is downloaded from the URL first.
+    String vpnConfig;
+    try {
+      final repo = ref.read(serverRepositoryProvider);
+      vpnConfig = await repo.resolveConfig(server);
+    } catch (e) {
+      _connectInProgress = false;
+      final mapped = VpnErrorMapper.map(e.toString());
+      debugPrint(
+        '[ConnectionController] config_resolve_error '
+        'server_id=${server.id.isNotEmpty ? server.id : server.hostName} '
+        'category=${mapped.category}',
+      );
+      state = state.copyWith(
+        status: ConnectionStatus.error,
+        errorMessage: mapped.userMessage,
+      );
+      return;
+    }
 
     // --- Preflight: validate profile ---------------------------------------
     final validation = OvpnValidator.validate(vpnConfig.isEmpty ? null : vpnConfig);

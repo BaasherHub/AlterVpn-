@@ -87,5 +87,38 @@ void main() {
       );
       expect(ServerRepository.isUsActive(server), isTrue);
     });
+
+    test('accepts a US server with ovpnUrl and no inline config', () {
+      final server = ServerModel(
+        id: 'srv_url',
+        hostName: 'url.example.com',
+        ip: '3.4.5.6',
+        countryLong: 'United States',
+        countryShort: 'US',
+        numVpnSessions: 10,
+        ping: 50,
+        speed: 1024 * 1024,
+        openVpnConfigDataBase64: '',
+        supportsTcp: true,
+        ovpnUrl: 'https://example.com/configs/us_northbergen.ovpn',
+      );
+      expect(ServerRepository.isUsActive(server), isTrue);
+    });
+
+    test('rejects a US server with no inline config and no ovpnUrl', () {
+      final server = ServerModel(
+        id: 'srv_empty',
+        hostName: 'empty.example.com',
+        ip: '4.5.6.7',
+        countryLong: 'United States',
+        countryShort: 'US',
+        numVpnSessions: 10,
+        ping: 50,
+        speed: 1024 * 1024,
+        openVpnConfigDataBase64: '',
+        supportsTcp: true,
+      );
+      expect(ServerRepository.isUsActive(server), isFalse);
+    });
   });
 }
