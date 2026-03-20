@@ -33,7 +33,6 @@ FROM nginx:alpine
 COPY --from=build /app/build/web /usr/share/nginx/html
 
 # Copy static OpenVPN config files served at /configs/*.ovpn
-# Replace configs/us_northbergen.ovpn with the real profile before deploying.
 COPY configs /usr/share/nginx/html/configs
 
 # Copy nginx config template (uses $PORT injected by Railway)
@@ -47,3 +46,5 @@ ENV PORT=8080
 ENV NGINX_ENVSUBST_VARS='PORT'
 
 EXPOSE 8080
+
+CMD ["nginx", "-g", "daemon off;"]
