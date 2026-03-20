@@ -62,6 +62,12 @@ class ServerModel {
   /// ISO 8601 timestamp of the last health check. Null when not reported.
   final String? lastCheckedAt;
 
+  /// URL to fetch the raw OpenVPN config from.
+  ///
+  /// When non-empty and [rawConfig] / [openVpnConfigDataBase64] are both
+  /// absent, the app must download the profile from this URL before connecting.
+  final String ovpnUrl;
+
   const ServerModel({
     this.id = '',
     required this.hostName,
@@ -79,6 +85,7 @@ class ServerModel {
     required this.openVpnConfigDataBase64,
     required this.supportsTcp,
     this.rawConfig = '',
+    this.ovpnUrl = '',
     this.isPremium = false,
     this.health,
     this.latencyMs = 0,
@@ -108,7 +115,14 @@ class ServerModel {
   }
 
   /// Whether this server has a usable OpenVPN configuration.
-  bool get hasConfig => rawConfig.isNotEmpty || openVpnConfigDataBase64.isNotEmpty;
+  ///
+  /// Returns `true` when an inline config is present ([rawConfig] or
+  /// [openVpnConfigDataBase64]) OR when [ovpnUrl] is set (the config
+  /// can be fetched remotely before connecting).
+  bool get hasConfig =>
+      rawConfig.isNotEmpty ||
+      openVpnConfigDataBase64.isNotEmpty ||
+      ovpnUrl.isNotEmpty;
 
   /// Effective latency in ms: prefers [latencyMs] when provided, falls back
   /// to legacy [ping].
@@ -241,7 +255,7 @@ class ServerModel {
   /// | JSON field                              | Maps to                 |
   /// |-----------------------------------------|-------------------------|
   /// | id                                      | id                      |
-  /// | hostName / serverName                   | hostName                |
+  /// | hostName / serverName / name            | hostName                |
   /// | ip / host                               | ip                      |
   /// | countryLong / country                   | countryLong             |
   /// | countryShort / countryCode              | countryShort            |
@@ -257,6 +271,7 @@ class ServerModel {
   /// | loadPercent                             | loadPercent             |
   /// | ovpnConfig                              | rawConfig               |
   /// | openVpnConfigDataBase64 / openVpnConfig | openVpnConfigDataBase64 |
+  /// | ovpn_url / ovpnUrl                      | ovpnUrl                 |
   /// | supportsTcp                             | supportsTcp             |
   /// | isPremium                               | isPremium               |
   /// | health                                  | health                  |
@@ -269,10 +284,14 @@ class ServerModel {
                 (json['openVpnConfig'] as String?) ??
                 '')
             .trim();
+    final ovpnUrlVal =
+        ((json['ovpn_url'] as String?) ?? (json['ovpnUrl'] as String?) ?? '')
+            .trim();
     return ServerModel(
       id: (json['id'] as String?) ?? '',
       hostName: (json['hostName'] as String?) ??
           (json['serverName'] as String?) ??
+          (json['name'] as String?) ??
           '',
       ip: (json['ip'] as String?) ?? (json['host'] as String?) ?? '',
       countryLong:
@@ -293,6 +312,7 @@ class ServerModel {
       openVpnConfigDataBase64: b64Cfg,
       supportsTcp: (json['supportsTcp'] as bool?) ?? true,
       rawConfig: rawCfg,
+      ovpnUrl: ovpnUrlVal,
       isPremium: (json['isPremium'] as bool?) ?? false,
       health: json['health'] as String?,
       latencyMs: ((json['latencyMs'] as num?) ?? 0).toInt(),

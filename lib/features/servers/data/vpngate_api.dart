@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' show min;
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:csv/csv.dart';
@@ -28,7 +29,36 @@ class VpnGateApi {
     try {
       final response = await _dio.get<String>(_backendUrl);
       if (response.statusCode == 200 && response.data != null) {
-        final servers = _parseResponse(response.data!);
+        final body = response.data!;
+
+        // Log payload size to detect unexpectedly large responses.
+        debugPrint(
+          '[VpnGateApi] payload_bytes=${body.length} endpoint=$_backendUrl',
+        );
+
+        // Guard: reject responses that are clearly not JSON.
+        // The /api/iphone/ endpoint always returns application/json, so a
+        // non-JSON body indicates a proxy misconfiguration or upstream error.
+        // We check the body shape unconditionally — even if Content-Type says
+        // application/json, a garbled body must not reach the parser.
+        final contentType =
+            response.headers.value(Headers.contentTypeHeader) ?? '';
+        final trimmed = body.trimLeft();
+        final looksLikeJson =
+            trimmed.startsWith('{') || trimmed.startsWith('[');
+        if (!looksLikeJson) {
+          final preview = trimmed.substring(0, min(200, trimmed.length));
+          debugPrint(
+            '[VpnGateApi] REJECT reason=non_json '
+            'content_type=$contentType preview=$preview',
+          );
+          throw Exception(
+            'Server returned an unexpected format (not JSON). '
+            'Please try again or contact support.',
+          );
+        }
+
+        final servers = _parseResponse(body);
         if (servers.isNotEmpty) return servers;
         throw Exception(
           'Server list is empty. The backend returned no usable servers. '
@@ -50,6 +80,41 @@ class VpnGateApi {
       );
     } catch (e) {
       debugPrint('[VpnGateApi] fetchServers error: $e');
+      rethrow;
+    }
+  }
+
+  /// Downloads a raw `.ovpn` profile from [url] and returns it as a string.
+  ///
+  /// Throws an [Exception] with a user-friendly message if the download fails
+  /// or the server responds with a non-200 status code.
+  Future<String> fetchRawConfig(String url) async {
+    try {
+      final response = await _dio.get<String>(
+        url,
+        options: Options(receiveTimeout: const Duration(seconds: 30)),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final config = response.data!;
+        debugPrint(
+          '[VpnGateApi] config_fetch_ok url=$url bytes=${config.length}',
+        );
+        return config;
+      }
+      throw Exception(
+        'Config fetch failed (HTTP ${response.statusCode}).',
+      );
+    } on DioException catch (e) {
+      final detail = e.response?.statusCode != null
+          ? 'HTTP ${e.response!.statusCode}'
+          : e.message ?? e.type.name;
+      debugPrint('[VpnGateApi] config_fetch_error url=$url detail=$detail');
+      throw Exception(
+        'Unable to download VPN configuration. '
+        'Please check your internet connection and try again.',
+      );
+    } catch (e) {
+      debugPrint('[VpnGateApi] fetchRawConfig error url=$url: $e');
       rethrow;
     }
   }
