@@ -22,7 +22,13 @@ class OvpnValidator {
   OvpnValidator._();
 
   /// Directives that every valid OpenVPN config must contain.
-  static const _requiredDirectives = ['remote', 'proto', 'dev'];
+  static const _requiredDirectives = [
+    'client',
+    'dev',
+    'proto',
+    'remote',
+    'remote-cert-tls',
+  ];
 
   /// At least one auth/cert block must be present.
   static const _authMaterialPatterns = [
@@ -37,7 +43,8 @@ class OvpnValidator {
   ///
   /// Returns `fail` with an actionable message when:
   ///   - [config] is null or empty
-  ///   - any required directive (`remote`, `proto`, `dev`) is missing
+  ///   - any required directive (`client`, `dev`, `proto`, `remote`,
+  ///     `remote-cert-tls`) is missing
   ///   - no authentication / certificate material is present
   static OvpnValidationResult validate(String? config) {
     if (config == null || config.trim().isEmpty) {
@@ -48,7 +55,10 @@ class OvpnValidator {
       );
     }
 
-    final lower = config.toLowerCase();
+    // Strip UTF-8 BOM (\uFEFF) that some servers prepend to text files.
+    // Without this, the first line comparison fails on profiles that have a BOM.
+    final stripped = config.startsWith('\uFEFF') ? config.substring(1) : config;
+    final lower = stripped.toLowerCase();
 
     for (final directive in _requiredDirectives) {
       // Directive must appear at the start of a line (possibly with leading whitespace).

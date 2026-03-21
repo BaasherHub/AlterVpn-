@@ -24,6 +24,39 @@ void main() {
       expect(server.hasConfig, isTrue);
     });
 
+    test('parses ovpn_url_tcp field (snake_case)', () {
+      final json = <String, dynamic>{
+        'id': 'us_northbergen',
+        'countryShort': 'US',
+        'ovpn_url': 'https://example.com/configs/us_northbergen.ovpn',
+        'ovpn_url_tcp': 'https://example.com/configs/us_northbergen_tcp.ovpn',
+      };
+      final server = ServerModel.fromJson(json);
+      expect(server.ovpnUrl, 'https://example.com/configs/us_northbergen.ovpn');
+      expect(server.ovpnUrlTcp, 'https://example.com/configs/us_northbergen_tcp.ovpn');
+    });
+
+    test('parses ovpnUrlTcp field (camelCase fallback)', () {
+      final json = <String, dynamic>{
+        'id': 'us_test',
+        'countryShort': 'US',
+        'ovpn_url': 'https://example.com/configs/us.ovpn',
+        'ovpnUrlTcp': 'https://example.com/configs/us_tcp.ovpn',
+      };
+      final server = ServerModel.fromJson(json);
+      expect(server.ovpnUrlTcp, 'https://example.com/configs/us_tcp.ovpn');
+    });
+
+    test('ovpnUrlTcp is empty string when field is absent', () {
+      final json = <String, dynamic>{
+        'id': 'us_test',
+        'countryShort': 'US',
+        'ovpn_url': 'https://example.com/configs/us.ovpn',
+      };
+      final server = ServerModel.fromJson(json);
+      expect(server.ovpnUrlTcp, isEmpty);
+    });
+
     test('parses ovpnUrl field (camelCase fallback)', () {
       final json = <String, dynamic>{
         'id': 'us_test',

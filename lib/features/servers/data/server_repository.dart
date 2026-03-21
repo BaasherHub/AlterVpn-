@@ -105,4 +105,13 @@ class ServerRepository {
       'Please select a different server or try again later.',
     );
   }
+
+  /// Downloads and returns the raw OpenVPN config text from [url].
+  ///
+  /// Used for fetching alternative profiles (e.g. TCP fallback) when the
+  /// primary config has already been resolved via [resolveConfig].
+  Future<String> resolveConfigFromUrl(String url) async {
+    debugPrint('[ServerRepository] resolveConfigFromUrl url=$url');
+    return _api.fetchRawConfig(url);
+  }
 }

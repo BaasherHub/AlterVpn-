@@ -68,6 +68,12 @@ class ServerModel {
   /// absent, the app must download the profile from this URL before connecting.
   final String ovpnUrl;
 
+  /// URL to fetch the TCP fallback OpenVPN config from.
+  ///
+  /// When non-empty, the app may retry using this profile when the primary
+  /// UDP connection (via [ovpnUrl]) times out or is blocked by a firewall.
+  final String ovpnUrlTcp;
+
   const ServerModel({
     this.id = '',
     required this.hostName,
@@ -86,6 +92,7 @@ class ServerModel {
     required this.supportsTcp,
     this.rawConfig = '',
     this.ovpnUrl = '',
+    this.ovpnUrlTcp = '',
     this.isPremium = false,
     this.health,
     this.latencyMs = 0,
@@ -287,6 +294,11 @@ class ServerModel {
     final ovpnUrlVal =
         ((json['ovpn_url'] as String?) ?? (json['ovpnUrl'] as String?) ?? '')
             .trim();
+    final ovpnUrlTcpVal =
+        ((json['ovpn_url_tcp'] as String?) ??
+                (json['ovpnUrlTcp'] as String?) ??
+                '')
+            .trim();
     return ServerModel(
       id: (json['id'] as String?) ?? '',
       hostName: (json['hostName'] as String?) ??
@@ -313,6 +325,7 @@ class ServerModel {
       supportsTcp: (json['supportsTcp'] as bool?) ?? true,
       rawConfig: rawCfg,
       ovpnUrl: ovpnUrlVal,
+      ovpnUrlTcp: ovpnUrlTcpVal,
       isPremium: (json['isPremium'] as bool?) ?? false,
       health: json['health'] as String?,
       latencyMs: ((json['latencyMs'] as num?) ?? 0).toInt(),

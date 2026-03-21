@@ -95,7 +95,9 @@ class VpnGateApi {
         options: Options(receiveTimeout: const Duration(seconds: 30)),
       );
       if (response.statusCode == 200 && response.data != null) {
-        final config = response.data!;
+        // Strip UTF-8 BOM (\uFEFF) that some servers prepend to text responses.
+        final raw = response.data!;
+        final config = raw.startsWith('\uFEFF') ? raw.substring(1) : raw;
         debugPrint(
           '[VpnGateApi] config_fetch_ok url=$url bytes=${config.length}',
         );
