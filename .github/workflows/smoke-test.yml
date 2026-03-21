@@ -1,0 +1,48 @@
+name: Smoke Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Backend URL to test (leave blank for production)'
+        required: false
+        default: 'https://altervpn-production.up.railway.app'
+  # Also runs after the main CI pipeline completes on main
+  workflow_run:
+    workflows: [CI]
+    branches: [main]
+    types: [completed]
+
+concurrency:
+  group: smoke-test-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  smoke-test:
+    name: Deploy Smoke Tests
+    runs-on: ubuntu-latest
+    # When triggered by workflow_run, only run if CI succeeded.
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine base URL
+        id: url
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "base_url=${{ github.event.inputs.base_url }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "base_url=https://altervpn-production.up.railway.app" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run smoke tests
+        run: |
+          chmod +x scripts/smoke_test.sh
+          scripts/smoke_test.sh "${{ steps.url.outputs.base_url }}"

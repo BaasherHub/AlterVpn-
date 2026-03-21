@@ -32,6 +32,10 @@ class ConnectionController extends Notifier<AlterConnectionState> {
   /// Timeout timer for the current connection attempt.
   Timer? _connectTimeoutTimer;
 
+  /// Set to `true` once a TCP fallback attempt has been made for the current
+  /// connection sequence so we do not fall back more than once.
+  bool _tcpFallbackAttempted = false;
+
   @override
   AlterConnectionState build() {
     _listenToVpnStage();
@@ -150,7 +154,9 @@ class ConnectionController extends Notifier<AlterConnectionState> {
   /// Starts the connection timeout watchdog.
   ///
   /// If [_kConnectTimeout] elapses while we are still in a connecting state,
-  /// the attempt is cancelled and a clear timeout error is surfaced.
+  /// the attempt is cancelled. When the server has a TCP fallback URL
+  /// ([ServerModel.ovpnUrlTcp]) and no TCP attempt has been made yet, the
+  /// fallback is tried automatically before surfacing an error.
   void _startConnectTimeout(ServerModel server) {
     _cancelConnectTimeout();
     _connectTimeoutTimer = Timer(_kConnectTimeout, () async {
@@ -160,13 +166,93 @@ class ConnectionController extends Notifier<AlterConnectionState> {
         '[ConnectionController] connect_timeout '
         'server=${server.id.isNotEmpty ? server.id : server.hostName}',
       );
-      _connectInProgress = false;
+
       await VpnEngine.stopVpn();
+
+      // Attempt TCP fallback once if the server advertises an alternate URL.
+      if (!_tcpFallbackAttempted && server.ovpnUrlTcp.isNotEmpty) {
+        debugPrint(
+          '[ConnectionController] tcp_fallback_start '
+          'server=${server.id.isNotEmpty ? server.id : server.hostName}',
+        );
+        _tcpFallbackAttempted = true;
+        await _doConnectFallbackTcp(server);
+        return;
+      }
+
+      _connectInProgress = false;
       state = state.copyWith(
         status: ConnectionStatus.error,
         errorMessage: AppStrings.transportTimeout,
       );
     });
+  }
+
+  /// Retries the connection using the server's TCP fallback profile.
+  ///
+  /// Downloads and validates [ServerModel.ovpnUrlTcp], then starts a new
+  /// VPN connection attempt with its own timeout watchdog.
+  Future<void> _doConnectFallbackTcp(ServerModel server) async {
+    state = state.copyWith(
+      status: ConnectionStatus.connecting,
+      clearError: true,
+    );
+
+    String vpnConfig;
+    try {
+      final repo = ref.read(serverRepositoryProvider);
+      vpnConfig = await repo.resolveConfigFromUrl(server.ovpnUrlTcp);
+    } catch (e) {
+      _connectInProgress = false;
+      final mapped = VpnErrorMapper.map(e.toString());
+      debugPrint(
+        '[ConnectionController] tcp_fallback_config_error '
+        'server=${server.id.isNotEmpty ? server.id : server.hostName} '
+        'category=${mapped.category}',
+      );
+      state = state.copyWith(
+        status: ConnectionStatus.error,
+        errorMessage: mapped.userMessage,
+      );
+      return;
+    }
+
+    final validation = OvpnValidator.validate(vpnConfig);
+      'server=${server.id.isNotEmpty ? server.id : server.hostName} '
+      'valid=${validation.isValid}',
+    );
+
+    if (!validation.isValid) {
+      _connectInProgress = false;
+      state = state.copyWith(
+        status: ConnectionStatus.error,
+        errorMessage: validation.errorMessage,
+      );
+      return;
+    }
+
+    try {
+      final config = VpnConfig(
+        config: vpnConfig,
+        serverName: server.hostName,
+        country: server.countryLong,
+      );
+      _startConnectTimeout(server);
+      await VpnEngine.startVpn(config);
+    } catch (e) {
+      _cancelConnectTimeout();
+      _connectInProgress = false;
+      final mapped = VpnErrorMapper.map(e.toString());
+      debugPrint(
+        '[ConnectionController] tcp_fallback_connect_error '
+        'category=${mapped.category} '
+        'server=${server.id.isNotEmpty ? server.id : server.hostName}',
+      );
+      state = state.copyWith(
+        status: ConnectionStatus.error,
+        errorMessage: mapped.userMessage,
+      );
+    }
   }
 
   Future<void> toggleConnection() async {
@@ -197,6 +283,7 @@ class ConnectionController extends Notifier<AlterConnectionState> {
 
   Future<void> _doConnect(ServerModel server) async {
     _connectInProgress = true;
+    _tcpFallbackAttempted = false;
     state = state.copyWith(
       status: ConnectionStatus.connecting,
       clearError: true,
@@ -231,7 +318,7 @@ class ConnectionController extends Notifier<AlterConnectionState> {
     }
 
     // --- Preflight: validate profile ---------------------------------------
-    final validation = OvpnValidator.validate(vpnConfig.isEmpty ? null : vpnConfig);
+    final validation = OvpnValidator.validate(vpnConfig);
     debugPrint(
       '[ConnectionController] profile_validation '
       'server_id=${server.id.isNotEmpty ? server.id : server.hostName} '
