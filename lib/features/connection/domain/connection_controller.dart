@@ -232,10 +232,13 @@ class ConnectionController extends Notifier<AlterConnectionState> {
 
     // --- Preflight: validate profile ---------------------------------------
     final validation = OvpnValidator.validate(vpnConfig.isEmpty ? null : vpnConfig);
+    final missingSuffix = validation.missingDirectives.isNotEmpty
+        ? ' missing=${validation.missingDirectives.join(",")}'
+        : '';
     debugPrint(
       '[ConnectionController] profile_validation '
       'server_id=${server.id.isNotEmpty ? server.id : server.hostName} '
-      'valid=${validation.isValid}',
+      'valid=${validation.isValid}$missingSuffix',
     );
 
     if (!validation.isValid) {

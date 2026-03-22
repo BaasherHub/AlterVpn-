@@ -50,6 +50,7 @@ void main() {
       final result = OvpnValidator.validate(noRemote);
       expect(result.isValid, isFalse);
       expect(result.errorMessage!.toLowerCase(), contains('remote'));
+      expect(result.missingDirectives, contains('remote'));
     });
 
     test('rejects config missing "proto" directive', () {
@@ -57,6 +58,7 @@ void main() {
       final result = OvpnValidator.validate(noProto);
       expect(result.isValid, isFalse);
       expect(result.errorMessage!.toLowerCase(), contains('proto'));
+      expect(result.missingDirectives, contains('proto'));
     });
 
     test('rejects config missing "dev" directive', () {
@@ -64,6 +66,7 @@ void main() {
       final result = OvpnValidator.validate(noDev);
       expect(result.isValid, isFalse);
       expect(result.errorMessage!.toLowerCase(), contains('dev'));
+      expect(result.missingDirectives, contains('dev'));
     });
 
     test('rejects config with no auth/cert material', () {
@@ -124,12 +127,23 @@ somekey
       final r = OvpnValidationResult.ok();
       expect(r.isValid, isTrue);
       expect(r.errorMessage, isNull);
+      expect(r.missingDirectives, isEmpty);
     });
 
     test('validation result fail() has isValid=false and non-null errorMessage', () {
       final r = OvpnValidationResult.fail('test error');
       expect(r.isValid, isFalse);
       expect(r.errorMessage, 'test error');
+      expect(r.missingDirectives, isEmpty);
+    });
+
+    test('validation result fail() populates missingDirectives when provided', () {
+      final r = OvpnValidationResult.fail(
+        'missing proto',
+        missingDirectives: ['proto'],
+      );
+      expect(r.isValid, isFalse);
+      expect(r.missingDirectives, ['proto']);
     });
   });
 }
