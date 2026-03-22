@@ -3,6 +3,17 @@
 class AdConfig {
   AdConfig._();
 
+  // ─── Feature flag ──────────────────────────────────────────────────────────
+  /// Master switch for the rewarded-ad flow.
+  ///
+  /// Set to `true` once your AdMob account and ad units are fully configured.
+  /// While `false` the ad-gate dialog is bypassed and users can connect
+  /// without watching an ad, so the VPN remains usable during development
+  /// and before ad accounts are wired up.
+  ///
+  // TODO: Set to `true` when AdMob is fully configured and tested.
+  static const bool adsEnabled = false;
+
   // ─── Ad Unit IDs ───────────────────────────────────────────────────────────
   // TODO: Replace with your real Android Rewarded Ad Unit ID from AdMob console.
   static const String androidRewardedAdUnitId =

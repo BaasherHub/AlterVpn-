@@ -18,16 +18,19 @@ const List<String> _loadingMessages = [
   'Good things come to those who wait…',
 ];
 
-/// Shows the ad-gate bottom sheet and returns `true` when the user has earned
-/// a reward (or the ad failed to load — we fail-open so users aren't blocked).
-Future<bool> showAdGateDialog(BuildContext context) async {
-  final result = await showModalBottomSheet<bool>(
+/// Shows the ad-gate bottom sheet.
+///
+/// Returns a tri-state [bool?]:
+/// - `true`  — user watched the ad and earned a reward.
+/// - `null`  — ad was unavailable; user chose to connect anyway (no reward).
+/// - `false` — user skipped or dismissed without connecting.
+Future<bool?> showAdGateDialog(BuildContext context) {
+  return showModalBottomSheet<bool?>(
     context: context,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
     builder: (_) => const _AdGateSheet(),
   );
-  return result ?? false;
 }
 
 // ─── Bottom Sheet ───────────────────────────────────────────────────────────
@@ -73,7 +76,22 @@ class _AdGateSheetState extends ConsumerState<_AdGateSheet> {
     ).listen((_) => _nextMessage());
 
     final adService = ref.read(adServiceProvider);
-    final rewarded = await adService.showRewardedAd();
+    final bool rewarded;
+    try {
+      rewarded = await adService.showRewardedAd();
+    } catch (_) {
+      // Defensive: should never reach here since AdService already catches,
+      // but guard anyway to prevent any uncaught exception reaching the UI.
+      _tickerSubscription?.cancel();
+      _tickerSubscription = null;
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _adUnavailable = true;
+        });
+      }
+      return;
+    }
 
     _tickerSubscription?.cancel();
     _tickerSubscription = null;
@@ -83,7 +101,7 @@ class _AdGateSheetState extends ConsumerState<_AdGateSheet> {
     if (rewarded) {
       Navigator.of(context).pop(true);
     } else {
-      // Ad closed without reward — let the user know and allow connecting.
+      // Ad closed without reward — let the user know.
       setState(() {
         _isLoading = false;
         _adUnavailable = true;
@@ -96,6 +114,10 @@ class _AdGateSheetState extends ConsumerState<_AdGateSheet> {
     final session = ref.watch(sessionControllerProvider);
     final adsWatched = session.adsWatchedToday;
     final streakLeft = (AdConfig.streakThreshold - adsWatched).clamp(0, AdConfig.streakThreshold);
+
+    // When ads are globally disabled, the sheet shows an informational notice
+    // and a "Connect for Free" button that pops `null` (connect without reward).
+    final bool adsDisabled = !AdConfig.adsEnabled || kIsWeb;
 
     return Container(
       decoration: const BoxDecoration(
@@ -124,8 +146,8 @@ class _AdGateSheetState extends ConsumerState<_AdGateSheet> {
           ),
           const SizedBox(height: AppSpacing.lg),
 
-          // Web-preview notice
-          if (kIsWeb)
+          // Ads-disabled / web-preview notice
+          if (adsDisabled)
             Container(
               margin: const EdgeInsets.only(bottom: AppSpacing.md),
               padding: const EdgeInsets.symmetric(
@@ -140,15 +162,17 @@ class _AdGateSheetState extends ConsumerState<_AdGateSheet> {
                     color: AppColors.accentGold.withValues(alpha: 0.3)),
               ),
               child: Text(
-                'Ads are disabled in web preview mode',
+                kIsWeb
+                    ? 'Ads are disabled in web preview mode'
+                    : 'Ads are not available right now',
                 style: AppTypography.bodySmall(
                     color: AppColors.accentGold),
                 textAlign: TextAlign.center,
               ),
             ),
 
-          // Ad-unavailable notice
-          if (_adUnavailable)
+          // Ad-unavailable notice (ads enabled but none loaded)
+          if (!adsDisabled && _adUnavailable)
             Container(
               margin: const EdgeInsets.only(bottom: AppSpacing.md),
               padding: const EdgeInsets.symmetric(
@@ -161,7 +185,7 @@ class _AdGateSheetState extends ConsumerState<_AdGateSheet> {
                     BorderRadius.circular(AppSpacing.borderRadiusMd),
               ),
               child: Text(
-                'Ad unavailable — connecting for free this time',
+                'Ad unavailable right now. Please try again later.',
                 style: AppTypography.bodySmall(
                     color: AppColors.accentGreenLight),
                 textAlign: TextAlign.center,
@@ -205,13 +229,22 @@ class _AdGateSheetState extends ConsumerState<_AdGateSheet> {
           ),
           if (_isLoading) const SizedBox(height: AppSpacing.md),
 
-          // Watch & Connect button
+          // Primary action button
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _isLoading ? null : _handleWatch,
+              onPressed: _isLoading
+                  ? null
+                  : () {
+                      if (adsDisabled || _adUnavailable) {
+                        // Connect without granting a streak reward.
+                        Navigator.of(context).pop(null);
+                      } else {
+                        _handleWatch();
+                      }
+                    },
               style: ElevatedButton.styleFrom(
-                backgroundColor: _adUnavailable
+                backgroundColor: (adsDisabled || _adUnavailable)
                     ? AppColors.accentGreenLight
                     : AppColors.accentGreen,
                 foregroundColor: AppColors.darkText,
@@ -233,11 +266,9 @@ class _AdGateSheetState extends ConsumerState<_AdGateSheet> {
                       ),
                     )
                   : Text(
-                      _adUnavailable
+                      (adsDisabled || _adUnavailable)
                           ? 'Connect for Free'
-                          : kIsWeb
-                              ? 'Connect (Web Preview)'
-                              : 'Watch & Connect',
+                          : 'Watch & Connect',
                       style: AppTypography.labelLarge(
                           color: AppColors.darkText),
                     ),

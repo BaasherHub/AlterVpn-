@@ -17,8 +17,14 @@ final adServiceProvider = Provider<AdService>((ref) {
 /// showing a rewarded video, and clean-up.
 ///
 /// On web (`kIsWeb`), all ad operations are no-ops and [showRewardedAd]
-/// always returns `true` so the rest of the flow works during web testing.
+/// always returns `false` so the ad-unavailable path is exercised in preview.
 class AdService {
+  /// Whether the rewarded-ad feature is enabled.
+  /// Defaults to [AdConfig.adsEnabled]; pass an explicit value in tests.
+  final bool adsEnabled;
+
+  AdService({this.adsEnabled = AdConfig.adsEnabled});
+
   RewardedAd? _rewardedAd;
   bool _isLoading = false;
   bool _isInitialized = false;
@@ -33,16 +39,22 @@ class AdService {
 
   /// Initialise the Mobile Ads SDK and pre-load the first rewarded ad.
   /// Safe to call multiple times — subsequent calls are no-ops.
+  /// Any SDK-level exception is caught and logged so the app never crashes.
   Future<void> initialize() async {
-    if (kIsWeb || _isInitialized) return;
+    if (kIsWeb || _isInitialized || !adsEnabled) return;
     _isInitialized = true;
-    await MobileAds.instance.initialize();
-    _preloadAd();
+    try {
+      await MobileAds.instance.initialize();
+      _preloadAd();
+    } catch (e) {
+      debugPrint('[AdService] SDK initialization failed: $e');
+      _isInitialized = false; // allow retry on next call
+    }
   }
 
   /// Pre-load a rewarded ad in the background.
   void _preloadAd() {
-    if (kIsWeb || _isLoading || _rewardedAd != null) return;
+    if (kIsWeb || _isLoading || _rewardedAd != null || !adsEnabled) return;
     _isLoading = true;
 
     RewardedAd.load(
@@ -54,6 +66,7 @@ class AdService {
           _isLoading = false;
         },
         onAdFailedToLoad: (error) {
+          debugPrint('[AdService] Ad failed to load: $error');
           _isLoading = false;
           _rewardedAd = null;
         },
@@ -63,22 +76,33 @@ class AdService {
 
   /// Show the pre-loaded rewarded ad.
   ///
-  /// Returns `true` when the user earns a reward, `false` if the user
-  /// skipped/closed without earning, and `true` (fallback) when no ad could
-  /// be loaded — so the user is never blocked from connecting.
+  /// Returns `true` **only** when the user earns a reward via the
+  /// [onUserEarnedReward] callback.  All failure paths — SDK not ready,
+  /// no ad loaded, show error, or any exception — return `false` so that
+  /// the caller can surface a graceful "ads unavailable" message rather than
+  /// silently granting a reward or crashing.
   Future<bool> showRewardedAd() async {
-    // On web, skip ads entirely — return true so the flow continues.
-    if (kIsWeb) return true;
+    // Feature flag off — ads not configured yet.
+    if (!adsEnabled) return false;
 
-    // Ensure the SDK is initialised (idempotent). If initialization has not
-    // finished yet the _rewardedAd will be null and we fail-open below.
-    if (!_isInitialized) await initialize();
+    // On web, skip ads entirely.
+    if (kIsWeb) return false;
+
+    // Ensure the SDK is initialised.
+    if (!_isInitialized) {
+      try {
+        await initialize();
+      } catch (e) {
+        debugPrint('[AdService] initialize() threw during showRewardedAd: $e');
+        return false;
+      }
+    }
 
     final ad = _rewardedAd;
     if (ad == null) {
-      // Ad failed to load → grant free connection so the user isn't blocked.
+      // No ad loaded yet — trigger a background load for the next attempt.
       _preloadAd();
-      return true;
+      return false;
     }
 
     bool rewarded = false;
@@ -93,10 +117,12 @@ class AdService {
         if (!completer.isCompleted) completer.complete(rewarded);
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
+        debugPrint('[AdService] Ad failed to show: $error');
         ad.dispose();
         _rewardedAd = null;
         _preloadAd();
-        if (!completer.isCompleted) completer.complete(true); // fail open
+        // Reward was NOT earned — return false so UI can show a message.
+        if (!completer.isCompleted) completer.complete(false);
       },
     );
 
@@ -108,13 +134,11 @@ class AdService {
       );
     } catch (e) {
       // ad.show() can throw if the Activity is gone or the ad is stale.
-      // Fail open: dispose the ad, pre-load a fresh one, and let the user
-      // through so a broken ad never blocks connectivity.
       debugPrint('[AdService] ad.show() threw: $e');
       ad.dispose();
       _rewardedAd = null;
       _preloadAd();
-      return true;
+      return false;
     }
 
     return completer.future;
