@@ -8,6 +8,7 @@ import '../../../services/vpn/vpn_config_model.dart';
 import '../../../services/vpn/vpn_status_model.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/ovpn_validator.dart';
+import '../../../core/utils/ovpn_credentials.dart';
 import '../../../core/utils/vpn_error_mapper.dart';
 import 'connection_state.dart';
 import 'session_controller.dart';
@@ -252,10 +253,16 @@ class ConnectionController extends Notifier<AlterConnectionState> {
 
     // --- Connect ----------------------------------------------------------
     try {
+      final creds = OvpnCredentialsExtractor.extract(
+        vpnConfig,
+      );
+
       final config = VpnConfig(
         config: vpnConfig,
         serverName: server.hostName,
         country: server.countryLong,
+        username: creds.username,
+        password: creds.password,
       );
 
       // Start timeout watchdog before handing off to the native engine.
