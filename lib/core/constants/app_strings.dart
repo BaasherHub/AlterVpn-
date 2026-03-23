@@ -79,7 +79,7 @@ class AppStrings {
   static const String serverUnavailable =
       'Server unavailable. Please try again later.';
   static const String noHealthyServers =
-      'No available US servers right now. Please try again later.';
+      'No available servers right now. Please try again later.';
   static const String connectInProgress =
       'A connection attempt is already in progress. Please wait.';
 }

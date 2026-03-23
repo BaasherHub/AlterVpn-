@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'ad_config.dart';
 
 /// Riverpod provider that exposes the singleton [AdService].
@@ -19,6 +20,10 @@ final adServiceProvider = Provider<AdService>((ref) {
 /// On web (`kIsWeb`), all ad operations are no-ops and [showRewardedAd]
 /// always returns `false` so the ad-unavailable path is exercised in preview.
 class AdService {
+  // Rewarded-ad cooldown: prevents rapid re-tapping from spamming ad requests
+  // (and helps avoid policy-triggering ad spam behavior).
+  static const String _kAdCooldownUntilMs = 'ad_cooldown_until_ms';
+
   /// Whether the rewarded-ad feature is enabled.
   /// Defaults to [AdConfig.adsEnabled]; pass an explicit value in tests.
   final bool adsEnabled;
@@ -88,6 +93,14 @@ class AdService {
     // On web, skip ads entirely.
     if (kIsWeb) return false;
 
+    // Enforce rewarded-ad cooldown between "show" attempts.
+    final prefs = await SharedPreferences.getInstance();
+    final cooldownUntilMs = prefs.getInt(_kAdCooldownUntilMs) ?? 0;
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    if (cooldownUntilMs > nowMs) {
+      return false;
+    }
+
     // Ensure the SDK is initialised.
     if (!_isInitialized) {
       try {
@@ -127,6 +140,13 @@ class AdService {
     );
 
     try {
+      // Mark the cooldown as soon as we start showing the ad, so multiple
+      // quick taps don't result in multiple reward flows.
+      final cooldownMs = DateTime.now()
+          .add(const Duration(seconds: AdConfig.adCooldownSeconds))
+          .millisecondsSinceEpoch;
+      await prefs.setInt(_kAdCooldownUntilMs, cooldownMs);
+
       await ad.show(
         onUserEarnedReward: (_, reward) {
           rewarded = true;

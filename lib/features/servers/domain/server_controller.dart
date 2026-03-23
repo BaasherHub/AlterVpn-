@@ -16,7 +16,7 @@ class ServerController extends AsyncNotifier<List<ServerModel>> {
   @override
   Future<List<ServerModel>> build() async {
     final servers = await _fetchServers();
-    _autoSelectBestUsServer(servers);
+    _autoSelectBestServer(servers);
     return servers;
   }
 
@@ -29,17 +29,17 @@ class ServerController extends AsyncNotifier<List<ServerModel>> {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final servers = await _fetchServers(forceRefresh: true);
-      _autoSelectBestUsServer(servers);
+      _autoSelectBestServer(servers);
       return servers;
     });
   }
 
-  /// Auto-selects the best US server when no server is currently selected.
+  /// Auto-selects the best server when no server is currently selected.
   ///
   /// Picks the first server in the (already quality-sorted) list, which
   /// ensures the app always has a working default without requiring the user
   /// to visit the server screen.
-  void _autoSelectBestUsServer(List<ServerModel> servers) {
+  void _autoSelectBestServer(List<ServerModel> servers) {
     if (servers.isEmpty) return;
 
     final current = ref.read(selectedServerProvider);

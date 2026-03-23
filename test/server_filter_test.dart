@@ -26,40 +26,35 @@ ServerModel _makeServer({
 }
 
 void main() {
-  group('ServerRepository.isUsActive', () {
+  group('ServerRepository.isServerActive', () {
     test('accepts a US server with no health data', () {
       final server = _makeServer(countryShort: 'US', health: null);
-      expect(ServerRepository.isUsActive(server), isTrue);
+      expect(ServerRepository.isServerActive(server), isTrue);
     });
 
     test('accepts a US server with health=online', () {
       final server = _makeServer(countryShort: 'US', health: ServerHealth.online);
-      expect(ServerRepository.isUsActive(server), isTrue);
+      expect(ServerRepository.isServerActive(server), isTrue);
     });
 
     test('accepts a US server with health=degraded', () {
       final server = _makeServer(countryShort: 'US', health: ServerHealth.degraded);
-      expect(ServerRepository.isUsActive(server), isTrue);
+      expect(ServerRepository.isServerActive(server), isTrue);
     });
 
     test('rejects a US server with health=offline', () {
       final server = _makeServer(countryShort: 'US', health: ServerHealth.offline);
-      expect(ServerRepository.isUsActive(server), isFalse);
+      expect(ServerRepository.isServerActive(server), isFalse);
     });
 
-    test('rejects a non-US server (DE)', () {
+    test('accepts a non-US server with no health data', () {
       final server = _makeServer(countryShort: 'DE', health: null);
-      expect(ServerRepository.isUsActive(server), isFalse);
-    });
-
-    test('rejects a non-US server (JP)', () {
-      final server = _makeServer(countryShort: 'JP', health: ServerHealth.online);
-      expect(ServerRepository.isUsActive(server), isFalse);
+      expect(ServerRepository.isServerActive(server), isTrue);
     });
 
     test('rejects a US server with no config', () {
       final server = _makeServer(countryShort: 'US', hasConfig: false);
-      expect(ServerRepository.isUsActive(server), isFalse);
+      expect(ServerRepository.isServerActive(server), isFalse);
     });
 
     test('rejects a non-US server with health=online and no config', () {
@@ -68,24 +63,23 @@ void main() {
         health: ServerHealth.online,
         hasConfig: false,
       );
-      expect(ServerRepository.isUsActive(server), isFalse);
+      expect(ServerRepository.isServerActive(server), isFalse);
     });
 
-    test('countryShort comparison is case-insensitive (lowercase us)', () {
-      // Construct a server with lowercase 'us'.
+    test('countryShort is not used for filtering', () {
       final server = ServerModel(
         id: 'srv_lower',
         hostName: 'lower.example.com',
         ip: '2.3.4.5',
         countryLong: 'United States',
-        countryShort: 'us', // lowercase
+        countryShort: 'br', // lowercase
         numVpnSessions: 5,
         ping: 30,
         speed: 512 * 1024,
         openVpnConfigDataBase64: 'dGVzdA==',
         supportsTcp: true,
       );
-      expect(ServerRepository.isUsActive(server), isTrue);
+      expect(ServerRepository.isServerActive(server), isTrue);
     });
 
     test('accepts a US server with ovpnUrl and no inline config', () {
@@ -102,10 +96,10 @@ void main() {
         supportsTcp: true,
         ovpnUrl: 'https://example.com/configs/us_northbergen.ovpn',
       );
-      expect(ServerRepository.isUsActive(server), isTrue);
+      expect(ServerRepository.isServerActive(server), isTrue);
     });
 
-    test('rejects a US server with no inline config and no ovpnUrl', () {
+    test('rejects a server with no inline config and no ovpnUrl', () {
       final server = ServerModel(
         id: 'srv_empty',
         hostName: 'empty.example.com',
@@ -118,7 +112,7 @@ void main() {
         openVpnConfigDataBase64: '',
         supportsTcp: true,
       );
-      expect(ServerRepository.isUsActive(server), isFalse);
+      expect(ServerRepository.isServerActive(server), isFalse);
     });
   });
 }

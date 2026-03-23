@@ -11,10 +11,10 @@ class ServerRepository {
 
   static const Duration _cacheExpiry = Duration(minutes: 30);
 
-  /// Fetches and returns servers, applying US-only + health gating.
+  /// Fetches and returns servers, applying health + connectability gating.
   ///
-  /// Only servers that pass [_isUsActive] are included in the result.
-  /// Non-US and offline servers are excluded from the selection path.
+  /// Only servers that are connectable (have config) and are not explicitly
+  /// reported as offline are included in the result.
   Future<List<ServerModel>> getServers({bool forceRefresh = false}) async {
     final now = DateTime.now();
     final isCacheValid = _lastFetch != null &&
@@ -27,33 +27,29 @@ class ServerRepository {
 
     final all = await _api.fetchServers();
 
-    // Apply US-only + health gate.
-    final usActive = all.where(isUsActive).toList();
+    // Apply health gate + connectability gate.
+    final activeServers = all.where(isServerActive).toList();
 
     debugPrint(
-      '[ServerRepository] total=${all.length} us_active=${usActive.length}',
+      '[ServerRepository] total=${all.length} active=${activeServers.length}',
     );
 
     // Sort by composite quality score (higher = better):
     //   1. Has a valid config (connectable first).
     //   2. Has active sessions (server is reachable).
     //   3. Lower ping (faster).
-    usActive.sort((a, b) => b.qualityScore.compareTo(a.qualityScore));
-    _cachedServers = usActive;
+    activeServers.sort((a, b) => b.qualityScore.compareTo(a.qualityScore));
+    _cachedServers = activeServers;
     _lastFetch = now;
     return _cachedServers;
   }
 
-  /// Returns `true` when [server] is a valid, active US server.
+  /// Returns `true` when [server] is a connectable and active server.
   ///
   /// Criteria:
-  ///   - Country code is "US".
   ///   - Health is `null` (not reported), "online", or "degraded" — never "offline".
-  ///   - Server has a usable OpenVPN configuration.
-  static bool isUsActive(ServerModel server) {
-    final isUs = server.countryShort.toUpperCase() == 'US';
-    if (!isUs) return false;
-
+  ///   - Server has a usable OpenVPN configuration (inline config or `ovpnUrl`).
+  static bool isServerActive(ServerModel server) {
     final health = server.health;
     final healthOk = health == null ||
         health == ServerHealth.online ||

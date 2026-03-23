@@ -63,6 +63,9 @@ const _kFreePassExpiresAt = 'free_pass_expires_at';
 
 class SessionController extends Notifier<SessionData> {
   Timer? _ticker;
+  DateTime? _sessionExpiresAt;
+  DateTime? _freePassExpiresAt;
+  String? _adsWatchedDateKey;
 
   @override
   SessionData build() {
@@ -76,17 +79,19 @@ class SessionController extends Notifier<SessionData> {
   Future<void> _loadPersistedState() async {
     final prefs = await SharedPreferences.getInstance();
     final now = DateTime.now();
+    final todayKey = _dateKey(now);
 
     // Restore ad streak (reset if it's a new calendar day).
     final savedDate = prefs.getString(_kAdsWatchedDate) ?? '';
-    final today = _dateKey(now);
     final adsWatched =
-        savedDate == today ? (prefs.getInt(_kAdsWatchedToday) ?? 0) : 0;
+        savedDate == todayKey ? (prefs.getInt(_kAdsWatchedToday) ?? 0) : 0;
+    _adsWatchedDateKey = adsWatched == 0 ? todayKey : savedDate;
 
     // Restore free pass.
     final freePassMs = prefs.getInt(_kFreePassExpiresAt) ?? 0;
     final freePassExpires = DateTime.fromMillisecondsSinceEpoch(freePassMs);
     final hasFreePass = freePassExpires.isAfter(now);
+    _freePassExpiresAt = freePassExpires;
 
     // Restore session timer.
     final sessionExpiresMs = prefs.getInt(_kSessionExpiresAt) ?? 0;
@@ -95,6 +100,7 @@ class SessionController extends Notifier<SessionData> {
 
     if (sessionExpires.isAfter(now)) {
       final remaining = sessionExpires.difference(now);
+      _sessionExpiresAt = sessionExpires;
       state = state.copyWith(
         sessionState: SessionState.active,
         remaining: remaining,
@@ -103,6 +109,7 @@ class SessionController extends Notifier<SessionData> {
       );
       _startTicker(sessionExpires);
     } else {
+      _sessionExpiresAt = null;
       state = state.copyWith(
         sessionState: SessionState.idle,
         adsWatchedToday: adsWatched,
@@ -118,16 +125,17 @@ class SessionController extends Notifier<SessionData> {
   Future<void> onAdRewarded() async {
     final prefs = await SharedPreferences.getInstance();
     final now = DateTime.now();
-    final today = _dateKey(now);
+    final todayKey = _dateKey(now);
 
     // Increment streak (reset if new day).
     final savedDate = prefs.getString(_kAdsWatchedDate) ?? '';
     final previousCount =
-        savedDate == today ? (prefs.getInt(_kAdsWatchedToday) ?? 0) : 0;
+        savedDate == todayKey ? (prefs.getInt(_kAdsWatchedToday) ?? 0) : 0;
     final newCount = previousCount + 1;
 
     await prefs.setInt(_kAdsWatchedToday, newCount);
-    await prefs.setString(_kAdsWatchedDate, today);
+    await prefs.setString(_kAdsWatchedDate, todayKey);
+    _adsWatchedDateKey = todayKey;
 
     // Check if streak threshold reached → grant 24-hour free pass.
     bool hasFreePass = state.hasFreePass;
@@ -137,12 +145,14 @@ class SessionController extends Notifier<SessionData> {
       await prefs.setInt(
           _kFreePassExpiresAt, midnight.millisecondsSinceEpoch);
       hasFreePass = true;
+      _freePassExpiresAt = midnight;
     }
 
     // Start session timer.
     final sessionDuration =
         const Duration(seconds: AdConfig.sessionDurationSeconds);
     final expiresAt = now.add(sessionDuration);
+    _sessionExpiresAt = expiresAt;
     await prefs.setInt(
         _kSessionExpiresAt, expiresAt.millisecondsSinceEpoch);
 
@@ -164,6 +174,7 @@ class SessionController extends Notifier<SessionData> {
     final sessionDuration =
         const Duration(seconds: AdConfig.sessionDurationSeconds);
     final expiresAt = now.add(sessionDuration);
+    _sessionExpiresAt = expiresAt;
     await prefs.setInt(
         _kSessionExpiresAt, expiresAt.millisecondsSinceEpoch);
 
@@ -190,16 +201,41 @@ class SessionController extends Notifier<SessionData> {
 
   void _startTicker(DateTime expiresAt) {
     _ticker?.cancel();
+    _sessionExpiresAt = expiresAt;
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      final remaining = expiresAt.difference(DateTime.now());
+      final now = DateTime.now();
+      final sessionExpiresAt = _sessionExpiresAt ?? expiresAt;
+      final remaining = sessionExpiresAt.difference(now);
+      final todayKey = _dateKey(now);
+
+      // Midnight rollover: reset streak counter and recompute free-pass
+      // validity while the app is still running.
+      final shouldResetAds =
+          _adsWatchedDateKey != null && _adsWatchedDateKey != todayKey;
+      if (shouldResetAds) {
+        _adsWatchedDateKey = todayKey;
+      }
+
+      final hasFreePass = _freePassExpiresAt != null
+          ? _freePassExpiresAt!.isAfter(now)
+          : state.hasFreePass;
+
       if (remaining.isNegative || remaining == Duration.zero) {
         _ticker?.cancel();
         state = state.copyWith(
           sessionState: SessionState.expired,
           remaining: Duration.zero,
+          adsWatchedToday: shouldResetAds ? 0 : state.adsWatchedToday,
+          hasFreePass: hasFreePass,
         );
       } else {
         state = state.copyWith(remaining: remaining);
+        if (shouldResetAds || state.hasFreePass != hasFreePass) {
+          state = state.copyWith(
+            adsWatchedToday: shouldResetAds ? 0 : state.adsWatchedToday,
+            hasFreePass: hasFreePass,
+          );
+        }
       }
     });
   }
@@ -207,6 +243,7 @@ class SessionController extends Notifier<SessionData> {
   void _dispose() {
     _ticker?.cancel();
     _ticker = null;
+    _sessionExpiresAt = null;
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
