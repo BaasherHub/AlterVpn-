@@ -199,8 +199,10 @@ For Google Play uploads, use a release keystore instead of debug:
 1. Create a keystore:  
    `keytool -genkey -v -keystore android/upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload`
 2. Copy `android/keystore.properties.example` to `android/keystore.properties`
-3. Fill in `storePassword`, `keyPassword`, `keyAlias`, and `storeFile`
+3. Fill in `storePassword`, `keyPassword`, `keyAlias`, and `storeFile` (use `storeFile=upload-keystore.jks` if keystore is in `android/`)
 4. Build: `flutter build appbundle --release`
+
+> **Full Play Store deployment steps** → see [PLAY_STORE_CHECKLIST.md](PLAY_STORE_CHECKLIST.md)
 
 > **Note:** The `openvpn_flutter` plugin requires real device testing for VPN connectivity. The UI and server list work fine on emulators.
 
