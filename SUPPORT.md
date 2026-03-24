@@ -16,6 +16,10 @@ Play may ask for **Contact email** and optionally **Website** or **Phone**.
 
 > **Action:** Replace any placeholder with your real support address before going live. You do not need to put the email inside the app unless you want a “Contact” screen later.
 
+## Security
+
+To report a **security vulnerability**, do not use public issues — see **[SECURITY.md](SECURITY.md)**.
+
 ## Maintainer
 
 Project repository: [github.com/BaasherHub/AlterVpn-](https://github.com/BaasherHub/AlterVpn-)

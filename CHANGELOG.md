@@ -5,6 +5,8 @@ All notable changes to AlterVPN are documented here. Version numbers follow `pub
 ## [Unreleased]
 
 ### Added
+- `LICENSE` (MIT), `SECURITY.md`, `CONTRIBUTING.md`
+- GitHub issue template config (security contact link), feature request template
 - Go-live `SUBMISSION_CHECKLIST.md`, `SUPPORT.md`, GitHub bug report issue template
 
 ## [1.0.0] - 2026-03-24

@@ -183,6 +183,9 @@ Google will run automated tests. Fix any crashes or policy violations before pro
 | Changelog | `CHANGELOG.md` |
 | Go-live checklist | `SUBMISSION_CHECKLIST.md` |
 | Support / contact | `SUPPORT.md` |
+| Security reporting | `SECURITY.md` |
+| Contributing | `CONTRIBUTING.md` |
+| License | `LICENSE` (MIT) |
 | Ad config | `lib/services/ads/ad_config.dart` |
 | Version | `pubspec.yaml` |
 

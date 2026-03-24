@@ -213,6 +213,8 @@ For Google Play uploads, use a release keystore instead of debug:
 | [STORE_LISTING_COPY.md](STORE_LISTING_COPY.md) | Store listing text |
 | [RELEASE_NOTES_TEMPLATE.md](RELEASE_NOTES_TEMPLATE.md) | Play release notes |
 | [CHANGELOG.md](CHANGELOG.md) | Version history |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute |
+| [SECURITY.md](SECURITY.md) | Report vulnerabilities privately |
 
 > **Note:** The `openvpn_flutter` plugin requires real device testing for VPN connectivity. The UI and server list work fine on emulators.
 
@@ -321,9 +323,7 @@ VPNGate servers use the standard OpenVPN username/password `vpn` / `vpn`, which 
 
 ---
 
-
-
-MIT License — see [LICENSE](LICENSE) for details.
+License: [MIT](LICENSE).
 
 ---
 
