@@ -2,6 +2,8 @@
 
 Use this checklist to publish AlterVPN to Google Play. Work through each section in order.
 
+> **Status:** VPN verified on device ✓ — ready for Play submission once assets and keystore are ready.
+
 ---
 
 ## Phase 1 — Build the Release AAB
@@ -42,7 +44,21 @@ flutter build appbundle --release
 
 Output: `build/app/outputs/bundle/release/app-release.aab`
 
-### 1.4 Optional: Build AAB in CI
+### 1.4 Prepare store assets
+
+Before creating your release, gather these graphics:
+
+| Asset | Spec | Where to put |
+|-------|------|--------------|
+| App icon | 512×512 PNG, no transparency | `store-assets/app-icon.png` |
+| Feature graphic | 1024×500 PNG/JPEG | `store-assets/feature-graphic.png` |
+| Phone screenshots | 2+ required, 9:16 or 16:9 | `store-assets/phone-screenshot-*.png` |
+
+See **`store-assets/README.md`** for design tips and brand colors.
+
+**Store listing text** (app name, descriptions) → see **`STORE_LISTING_COPY.md`** (copy-paste ready).
+
+### 1.6 Optional: Build AAB in CI
 
 The repo includes `.github/workflows/build-aab.yml` to build signed AAB on demand. Add these GitHub Actions secrets:
 
@@ -69,14 +85,12 @@ Then run **Actions → Build AAB for Play Store → Run workflow** and download 
 
 ### 2.2 Store listing
 
-| Field | Value |
-|-------|-------|
-| **App name** | AlterVPN |
-| **Short description** | Minimal. Secure. Free. VPN with no subscriptions. |
-| **Full description** | Privacy-first VPN client. Connect to OpenVPN servers with one tap. No accounts, no data collection. Dark/light theme, country grouping, real-time stats. |
-| **App icon** | 512×512 PNG (no transparency) |
-| **Feature graphic** | 1024×500 PNG/JPEG |
-| **Screenshots** | At least 2 phone screenshots (16:9 or 9:16) |
+| Field | Source |
+|-------|--------|
+| **App name, short & full description** | Copy from **`STORE_LISTING_COPY.md`** |
+| **App icon** | `store-assets/app-icon.png` (512×512 PNG, no transparency) |
+| **Feature graphic** | `store-assets/feature-graphic.png` (1024×500) |
+| **Screenshots** | `store-assets/phone-screenshot-*.png` (at least 2, 9:16 or 16:9) |
 
 ### 2.3 Content rating
 
@@ -113,9 +127,8 @@ Fill out the Data safety form. For AlterVPN:
 
 ### 2.7 Ads declaration
 
-If `AdConfig.adsEnabled = true` in production:
-- Declare that the app contains ads
-- Ads are rewarded videos (optional viewing)
+- **Current state:** `AdConfig.adsEnabled = false` → declare **"No, the app does not contain ads"** for initial launch
+- **When you enable ads later:** Set `adsEnabled = true`, replace test AdMob IDs, then declare **"Yes, the app contains ads"** (rewarded videos, optional)
 
 ---
 
