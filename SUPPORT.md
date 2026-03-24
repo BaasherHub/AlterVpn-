@@ -2,8 +2,9 @@
 
 ## For users
 
-- **Issues & feature requests:** [GitHub Issues](https://github.com/BaasherHub/AlterVpn-/issues) (public; use for bug reports)
-- **Privacy questions:** see [PRIVACY.md](PRIVACY.md) in this repository
+- **Privacy policy (public):** open from the app (**Settings → Privacy Policy**) or directly: `https://altervpn-production.up.railway.app/privacy.html`
+- **GitHub Issues:** available only if you grant access to the repository (repo may be private)
+- **Developers:** canonical policy text also in [PRIVACY.md](PRIVACY.md) (keep in sync with `web/privacy.html`)
 
 ## For Google Play Console
 

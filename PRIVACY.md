@@ -26,4 +26,8 @@ AlterVPN does not sell your data. We do not share your data with third parties f
 
 ## Contact
 
-For questions about this policy, open an issue at [github.com/BaasherHub/AlterVpn-](https://github.com/BaasherHub/AlterVpn-).
+**Canonical public URL (for Play Store & in-app link):**  
+`https://altervpn-production.up.railway.app/privacy.html`  
+(This page is shipped with the app’s web build; it stays reachable even when the source repository is private.)
+
+For questions about this policy, use the developer contact on the Google Play store listing.

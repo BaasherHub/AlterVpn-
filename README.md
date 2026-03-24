@@ -215,6 +215,7 @@ For Google Play uploads, use a release keystore instead of debug:
 | [CHANGELOG.md](CHANGELOG.md) | Version history |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute |
 | [SECURITY.md](SECURITY.md) | Report vulnerabilities privately |
+| [PRIVATE_REPO.md](PRIVATE_REPO.md) | Private GitHub repo: privacy URL, Play Store |
 
 > **Note:** The `openvpn_flutter` plugin requires real device testing for VPN connectivity. The UI and server list work fine on emulators.
 

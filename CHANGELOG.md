@@ -4,7 +4,11 @@ All notable changes to AlterVPN are documented here. Version numbers follow `pub
 
 ## [Unreleased]
 
+### Changed
+- Privacy policy for Play Store / in-app: public `web/privacy.html` on Railway; `AppStrings.privacyPolicyUrl` uses `ApiConstants.backendBaseUrl` + `/privacy.html` (works when GitHub repo is private)
+
 ### Added
+- `PRIVATE_REPO.md` — implications of a private repository
 - `LICENSE` (MIT), `SECURITY.md`, `CONTRIBUTING.md`
 - GitHub issue template config (security contact link), feature request template
 - Go-live `SUBMISSION_CHECKLIST.md`, `SUPPORT.md`, GitHub bug report issue template

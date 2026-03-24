@@ -20,7 +20,7 @@ Use this **single page** on the day you submit to Google Play. Check each box.
 - [ ] 512×512 app icon uploaded
 - [ ] 1024×500 feature graphic uploaded
 - [ ] At least **2** phone screenshots uploaded
-- [ ] **Privacy policy URL** set (same as app): GitHub `PRIVACY.md` link
+- [ ] **Privacy policy URL** set to public page: `https://altervpn-production.up.railway.app/privacy.html` (same as in-app; redeploy Railway after changes — see `PRIVATE_REPO.md`)
 - [ ] **Contains ads:** **No** (while `AdConfig.adsEnabled = false`)
 
 ---

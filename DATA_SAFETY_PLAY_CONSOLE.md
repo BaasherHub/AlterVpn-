@@ -48,11 +48,15 @@ If the form asks about data **stored on device only** and **not sent to your ser
 
 ## 4. Privacy policy URL
 
-Use the same URL as in the app:
+Use the **same public URL** as in the app (Settings → Privacy Policy). It is served from the Railway web deployment:
 
 ```
-https://github.com/BaasherHub/AlterVpn-/blob/main/PRIVACY.md
+https://altervpn-production.up.railway.app/privacy.html
 ```
+
+If you change `ApiConstants.backendBaseUrl`, the in-app URL updates automatically; use that host + `/privacy.html` in Play Console.
+
+See **`PRIVATE_REPO.md`** if the GitHub repo is private (GitHub blob links are not valid for Play).
 
 ---
 

@@ -116,7 +116,7 @@ Summary:
 | Question | Answer (ads disabled) |
 |----------|------------------------|
 | Does your app collect or share user data? | Typically **No** for developer-collected tracking; confirm each prompt in Console |
-| **Privacy policy URL** | `https://github.com/BaasherHub/AlterVpn-/blob/main/PRIVACY.md` |
+| **Privacy policy URL** | `https://altervpn-production.up.railway.app/privacy.html` (public; see `PRIVATE_REPO.md`) |
 
 > The in-app privacy policy link already points to this. Ensure the URL is publicly accessible.
 
@@ -175,7 +175,8 @@ Google will run automated tests. Fix any crashes or policy violations before pro
 | Item | Location |
 |------|----------|
 | App ID | `com.altervpn.app` (`android/app/build.gradle`) |
-| Privacy policy | `PRIVACY.md` (repo root) |
+| Privacy policy (public URL) | `https://altervpn-production.up.railway.app/privacy.html` · source: `web/privacy.html`, `PRIVACY.md` |
+| Private repo notes | `PRIVATE_REPO.md` |
 | Data Safety answers | `DATA_SAFETY_PLAY_CONSOLE.md` |
 | VPN Play policy notes | `VPN_PLAY_POLICY.md` |
 | Store listing copy | `STORE_LISTING_COPY.md` |

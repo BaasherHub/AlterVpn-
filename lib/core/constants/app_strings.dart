@@ -1,3 +1,5 @@
+import 'api_constants.dart';
+
 class AppStrings {
   AppStrings._();
 
@@ -63,8 +65,9 @@ class AppStrings {
   static const String version = 'Version';
   static const String privacyPolicy = 'Privacy Policy';
   static const String licenses = 'Open Source Licenses';
-  static const String privacyPolicyUrl =
-      'https://github.com/BaasherHub/AlterVpn-/blob/main/PRIVACY.md';
+  /// Public privacy page (served with the Railway web build). Same host as [ApiConstants.backendBaseUrl].
+  static String get privacyPolicyUrl =>
+      '${ApiConstants.backendBaseUrl}/privacy.html';
   static const String madeWith = 'Made with ♡';
 
   // Errors
