@@ -8,6 +8,8 @@ import 'package:alter_vpn/services/ads/ad_service.dart';
 // initialised in a pure-Dart test environment.
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('AdService — ads disabled path', () {
     test('showRewardedAd returns false immediately when adsEnabled=false', () async {
       final service = AdService(adsEnabled: false);
