@@ -204,6 +204,14 @@ For Google Play uploads, use a release keystore instead of debug:
 
 > **Full Play Store deployment steps** → see [PLAY_STORE_CHECKLIST.md](PLAY_STORE_CHECKLIST.md)
 
+| Doc | Purpose |
+|-----|---------|
+| [DATA_SAFETY_PLAY_CONSOLE.md](DATA_SAFETY_PLAY_CONSOLE.md) | Data Safety form answers (ads off) |
+| [VPN_PLAY_POLICY.md](VPN_PLAY_POLICY.md) | VPN app policy checklist |
+| [STORE_LISTING_COPY.md](STORE_LISTING_COPY.md) | Store listing text |
+| [RELEASE_NOTES_TEMPLATE.md](RELEASE_NOTES_TEMPLATE.md) | Play release notes |
+| [CHANGELOG.md](CHANGELOG.md) | Version history |
+
 > **Note:** The `openvpn_flutter` plugin requires real device testing for VPN connectivity. The UI and server list work fine on emulators.
 
 ## Architecture

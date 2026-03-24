@@ -81,7 +81,7 @@ Then run **Actions → Build AAB for Play Store → Run workflow** and download 
 2. **Create app** → Enter name "AlterVPN", default language
 3. Select app type: **App** (not game)
 4. Declare if it's free or paid (AlterVPN is free)
-5. Declare if it contains ads (yes — AdMob rewarded ads, currently disabled by default)
+5. Declare if it contains ads — **No** while `AdConfig.adsEnabled = false` (see §2.7)
 
 ### 2.2 Store listing
 
@@ -107,18 +107,18 @@ Then run **Actions → Build AAB for Play Store → Run workflow** and download 
 
 ### 2.5 Data safety
 
-Fill out the Data safety form. For AlterVPN:
+**Step-by-step answers (ads off):** see **`DATA_SAFETY_PLAY_CONSOLE.md`**.
 
-| Question | Answer |
-|----------|--------|
-| Does your app collect or share user data? | **Yes** (if using AdMob; otherwise **No** for core app data) |
-| Data types | If ads enabled: **App activity** (ad interactions) — optional; **Device or other IDs** (advertising ID) |
-| Is this data collected or shared? | Collected (for ads) |
-| Is this data processed ephemerally? | No |
-| Is this data required or optional? | Optional (user chooses to watch ads) |
+Summary:
+
+| Question | Answer (ads disabled) |
+|----------|------------------------|
+| Does your app collect or share user data? | Typically **No** for developer-collected tracking; confirm each prompt in Console |
 | **Privacy policy URL** | `https://github.com/BaasherHub/AlterVpn-/blob/main/PRIVACY.md` |
 
 > The in-app privacy policy link already points to this. Ensure the URL is publicly accessible.
+
+**VPN-specific policy context:** see **`VPN_PLAY_POLICY.md`**.
 
 ### 2.6 App access
 
@@ -138,7 +138,7 @@ Fill out the Data safety form. For AlterVPN:
 
 1. **Production** → **Create new release**
 2. Upload `app-release.aab`
-3. Add **Release notes** (e.g. "Initial release" or version-specific changes)
+3. Add **Release notes** — copy from **`RELEASE_NOTES_TEMPLATE.md`** (or write your own)
 4. **Review and roll out**
 
 ### 3.2 Pre-launch report
@@ -174,6 +174,11 @@ Google will run automated tests. Fix any crashes or policy violations before pro
 |------|----------|
 | App ID | `com.altervpn.app` (`android/app/build.gradle`) |
 | Privacy policy | `PRIVACY.md` (repo root) |
+| Data Safety answers | `DATA_SAFETY_PLAY_CONSOLE.md` |
+| VPN Play policy notes | `VPN_PLAY_POLICY.md` |
+| Store listing copy | `STORE_LISTING_COPY.md` |
+| Release notes template | `RELEASE_NOTES_TEMPLATE.md` |
+| Changelog | `CHANGELOG.md` |
 | Ad config | `lib/services/ads/ad_config.dart` |
 | Version | `pubspec.yaml` |
 
