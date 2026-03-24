@@ -4,6 +4,14 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def useReleaseSigning = keystorePropertiesFile.exists()
+
+if (useReleaseSigning) {
+    def keystoreProperties = new Properties()
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace "com.altervpn.app"
     compileSdk flutter.compileSdkVersion
@@ -27,9 +35,20 @@ android {
         jvmTarget = "17"
     }
 
+    if (useReleaseSigning) {
+        signingConfigs {
+            release {
+                keyAlias keystoreProperties["keyAlias"]
+                keyPassword keystoreProperties["keyPassword"]
+                storeFile file(keystoreProperties["storeFile"])
+                storePassword keystoreProperties["storePassword"]
+            }
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            signingConfig useReleaseSigning ? signingConfigs.release : signingConfigs.debug
             minifyEnabled true
             shrinkResources true
         }

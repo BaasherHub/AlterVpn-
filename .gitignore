@@ -43,3 +43,7 @@ app.*.map.json
 # Android local config (machine-specific)
 android/local.properties
 local.properties
+
+# Release signing secrets (never commit)
+android/keystore.properties
+*.jks

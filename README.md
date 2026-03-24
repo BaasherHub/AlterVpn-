@@ -28,7 +28,7 @@ A privacy-first VPN client for Android built with Flutter, connecting to the [VP
 - ⚡ **One-tap connect** — select a server and tap the ring
 - 📊 **Real-time stats** — live download/upload speed and session timer
 - 🌙 **Dark / Light theme** — minimal palette with Playfair Display + DM Sans
-- 🔧 **Kill Switch & Auto-Connect** settings (stored locally, no cloud)
+- 🔧 **Settings** — theme, VPN profile install, open source licenses
 - 🗂 **Country grouping** — servers sorted by health/ping, grouped by country with flag emoji; city-level labels when provided
 - 🔍 **Search** — filter servers by country, city, or hostname
 
@@ -191,6 +191,16 @@ flutter run
 # 4. Build release APK
 flutter build apk --release
 ```
+
+### Play Store release signing
+
+For Google Play uploads, use a release keystore instead of debug:
+
+1. Create a keystore:  
+   `keytool -genkey -v -keystore android/upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload`
+2. Copy `android/keystore.properties.example` to `android/keystore.properties`
+3. Fill in `storePassword`, `keyPassword`, `keyAlias`, and `storeFile`
+4. Build: `flutter build appbundle --release`
 
 > **Note:** The `openvpn_flutter` plugin requires real device testing for VPN connectivity. The UI and server list work fine on emulators.
 

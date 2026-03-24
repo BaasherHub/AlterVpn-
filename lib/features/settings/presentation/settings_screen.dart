@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../domain/preferences_controller.dart';
 import '../../../core/constants/app_colors.dart';
@@ -32,28 +33,6 @@ class SettingsScreen extends ConsumerWidget {
         children: [
           _SectionHeader(title: AppStrings.connectionSection),
           const SizedBox(height: AppSpacing.md),
-          _SettingRow(
-            label: AppStrings.killSwitch,
-            subtitle: AppStrings.killSwitchSubtitle,
-            trailing: Switch(
-              value: prefs.isKillSwitchEnabled,
-              onChanged: (_) => controller.toggleKillSwitch(),
-            ),
-            textColor: textColor,
-            subtitleColor: secondaryColor,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          _SettingRow(
-            label: AppStrings.autoConnect,
-            subtitle: AppStrings.autoConnectSubtitle,
-            trailing: Switch(
-              value: prefs.isAutoConnectEnabled,
-              onChanged: (_) => controller.toggleAutoConnect(),
-            ),
-            textColor: textColor,
-            subtitleColor: secondaryColor,
-          ),
-          const SizedBox(height: AppSpacing.lg),
           _SettingRow(
             label: AppStrings.installVpnProfile,
             subtitle: AppStrings.installVpnProfileSubtitle,
@@ -111,6 +90,34 @@ class SettingsScreen extends ConsumerWidget {
                 subtitleColor: secondaryColor,
               );
             },
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _SettingRow(
+            label: AppStrings.privacyPolicy,
+            subtitle: '',
+            trailing: Icon(
+              Icons.chevron_right,
+              color: secondaryColor,
+              size: 18,
+            ),
+            onTap: () async {
+              try {
+                await launchUrl(
+                  Uri.parse(AppStrings.privacyPolicyUrl),
+                  mode: LaunchMode.externalApplication,
+                );
+              } catch (_) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Could not open Privacy Policy'),
+                    ),
+                  );
+                }
+              }
+            },
+            textColor: textColor,
+            subtitleColor: secondaryColor,
           ),
           const SizedBox(height: AppSpacing.lg),
           _SettingRow(

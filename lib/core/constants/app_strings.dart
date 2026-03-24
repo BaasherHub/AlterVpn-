@@ -61,7 +61,10 @@ class AppStrings {
   static const String darkModeSubtitle = 'Use dark theme';
   static const String aboutSection = 'About';
   static const String version = 'Version';
+  static const String privacyPolicy = 'Privacy Policy';
   static const String licenses = 'Open Source Licenses';
+  static const String privacyPolicyUrl =
+      'https://github.com/BaasherHub/AlterVpn-/blob/main/PRIVACY.md';
   static const String madeWith = 'Made with ♡';
 
   // Errors
