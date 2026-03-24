@@ -59,7 +59,7 @@ class AdService {
 
   /// Pre-load a rewarded ad in the background.
   void _preloadAd() {
-    if (kIsWeb || _isLoading || _rewardedAd != null || !adsEnabled) return;
+    if (kIsWeb || _isLoading || _rewardedAd != null || !adsEnabled || !_isInitialized) return;
     _isLoading = true;
 
     RewardedAd.load(
