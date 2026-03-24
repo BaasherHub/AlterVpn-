@@ -2,6 +2,11 @@
 
 All notable changes to AlterVPN are documented here. Version numbers follow `pubspec.yaml` (`versionName+versionCode`).
 
+## [Unreleased]
+
+### Added
+- Go-live `SUBMISSION_CHECKLIST.md`, `SUPPORT.md`, GitHub bug report issue template
+
 ## [1.0.0] - 2026-03-24
 
 ### Added

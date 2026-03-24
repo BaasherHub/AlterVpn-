@@ -206,6 +206,8 @@ For Google Play uploads, use a release keystore instead of debug:
 
 | Doc | Purpose |
 |-----|---------|
+| [SUBMISSION_CHECKLIST.md](SUBMISSION_CHECKLIST.md) | **One-page go-live checklist** |
+| [SUPPORT.md](SUPPORT.md) | Support links & Play Console contact hints |
 | [DATA_SAFETY_PLAY_CONSOLE.md](DATA_SAFETY_PLAY_CONSOLE.md) | Data Safety form answers (ads off) |
 | [VPN_PLAY_POLICY.md](VPN_PLAY_POLICY.md) | VPN app policy checklist |
 | [STORE_LISTING_COPY.md](STORE_LISTING_COPY.md) | Store listing text |

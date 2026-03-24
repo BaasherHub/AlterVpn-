@@ -4,6 +4,8 @@ Use this checklist to publish AlterVPN to Google Play. Work through each section
 
 > **Status:** VPN verified on device ✓ — ready for Play submission once assets and keystore are ready.
 
+> **Day-of upload:** use **`SUBMISSION_CHECKLIST.md`** (single checklist). **Support / Play contact:** **`SUPPORT.md`**.
+
 ---
 
 ## Phase 1 — Build the Release AAB
@@ -179,6 +181,8 @@ Google will run automated tests. Fix any crashes or policy violations before pro
 | Store listing copy | `STORE_LISTING_COPY.md` |
 | Release notes template | `RELEASE_NOTES_TEMPLATE.md` |
 | Changelog | `CHANGELOG.md` |
+| Go-live checklist | `SUBMISSION_CHECKLIST.md` |
+| Support / contact | `SUPPORT.md` |
 | Ad config | `lib/services/ads/ad_config.dart` |
 | Version | `pubspec.yaml` |
 
