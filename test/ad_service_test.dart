@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:alter_vpn/services/ads/ad_service.dart';
 
 // These tests exercise [AdService] logic that does NOT require the real
@@ -40,6 +41,7 @@ void main() {
     // initialize() call will throw; showRewardedAd() must catch that and
     // return false without propagating the exception.
     test('showRewardedAd returns false when SDK not available', () async {
+      SharedPreferences.setMockInitialValues({});
       final service = AdService(adsEnabled: true);
       // initialize() will fail (no SDK in test env) — showRewardedAd should
       // still return false rather than throwing.
