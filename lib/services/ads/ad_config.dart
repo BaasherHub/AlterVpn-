@@ -21,7 +21,7 @@ class AdConfig {
 
   // TODO: Replace with your real iOS Rewarded Ad Unit ID from AdMob console.
   static const String iosRewardedAdUnitId =
-      'ca-app-pub-3940256099942544/1712485313';
+      'ca-app-pub-8231561205304402/4438704038';
 
   // ─── Session Settings ──────────────────────────────────────────────────────
   /// How long a VPN session lasts after watching a rewarded ad (2 hours).
