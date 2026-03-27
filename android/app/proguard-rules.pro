@@ -20,3 +20,8 @@
 # Keep annotations
 -keepattributes *Annotation*
 -keepattributes SourceFile,LineNumberTable
+
+-keep class com.google.android.play.** { *; }
+-dontwarn com.google.android.play.**
+-keep class io.flutter.embedding.** { *; }
+-dontwarn io.flutter.embedding.**

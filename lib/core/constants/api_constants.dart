@@ -16,13 +16,12 @@ class ApiConstants {
   /// {
   ///   "servers": [
   ///     {
-  ///       "id":          "us_northbergen",
-  ///       "name":        "US - North Bergen",
-  ///       "countryLong": "United States",
-  ///       "countryShort":"US",
-  ///       "city":        "North Bergen",
-  ///       "active":      true,
-  ///       "ovpn_url":    "https://.../configs/us_northbergen.ovpn"
+  ///       "id": "us_northbergen",
+  ///       "ovpn_url": "https://.../configs/us_northbergen.ovpn"
+  ///     },
+  ///     {
+  ///       "id": "uk_london",
+  ///       "ovpn_url": "https://.../configs/uk_london.ovpn"
   ///     }
   ///   ]
   /// }

@@ -17,7 +17,7 @@ class AdConfig {
   // ─── Ad Unit IDs ───────────────────────────────────────────────────────────
   // TODO: Replace with your real Android Rewarded Ad Unit ID from AdMob console.
   static const String androidRewardedAdUnitId =
-      'ca-app-pub-3940256099942544/5224354917';
+      'ca-app-pub-8231561205304402/4438704038';
 
   // TODO: Replace with your real iOS Rewarded Ad Unit ID from AdMob console.
   static const String iosRewardedAdUnitId =
