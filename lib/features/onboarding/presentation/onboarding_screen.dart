@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../widgets/alter_logo_mark.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -55,6 +56,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            Padding(
+              padding: const EdgeInsets.only(
+                left: AppSpacing.screenPadding,
+                right: AppSpacing.screenPadding,
+                top: AppSpacing.md,
+                bottom: AppSpacing.sm,
+              ),
+              child: Row(
+                children: [
+                  const AlterLogoMark(size: 38),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    AppStrings.appName,
+                    style: AppTypography.headingMedium(color: AppColors.darkText),
+                  ),
+                ],
+              ),
+            ),
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
@@ -197,10 +216,23 @@ class _NextButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
+          backgroundColor: AppColors.darkSurface,
+          foregroundColor: AppColors.darkText,
           side: const BorderSide(color: AppColors.darkBorder),
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.zero,
           ),
+        ).copyWith(
+          overlayColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.pressed)) {
+              return AppColors.accentGold.withValues(alpha: 0.18);
+            }
+            if (states.contains(WidgetState.hovered) ||
+                states.contains(WidgetState.focused)) {
+              return AppColors.accentGold.withValues(alpha: 0.08);
+            }
+            return null;
+          }),
         ),
         child: Text(
           AppStrings.next.toUpperCase(),

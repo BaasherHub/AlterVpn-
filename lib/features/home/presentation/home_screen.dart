@@ -13,7 +13,7 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../services/ads/ad_config.dart';
-import 'quick_connect_categories.dart';
+import '../../../widgets/alter_logo_mark.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -40,9 +40,16 @@ class HomeScreen extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    AppStrings.appName,
-                    style: AppTypography.headingLarge(color: textColor),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AlterLogoMark(size: 36),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        AppStrings.appName,
+                        style: AppTypography.headingLarge(color: textColor),
+                      ),
+                    ],
                   ),
                   IconButton(
                     icon: Icon(Icons.settings_outlined,
@@ -144,10 +151,6 @@ class HomeScreen extends ConsumerWidget {
                 ],
               ),
             ),
-
-            // Quick connect categories
-            const QuickConnectCategories(),
-            const SizedBox(height: AppSpacing.md),
 
             // Selected server selector
             Padding(
